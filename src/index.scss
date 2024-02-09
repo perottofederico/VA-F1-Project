@@ -1,0 +1,84 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', ans-serif;
+}
+
+
+#root_Ref {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "header header"
+    "temperature humidity"
+    "wind clouds"
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  display: grid;
+  overflow: hidden;
+
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+  grid-template-areas: 
+    "linechart linechart linechart"
+    "parallel_coords barchart scatterplot";
+  }
+  
+  .linechart { grid-area: 1 / 1 / 2 / 4; }
+  .parallel_coords { grid-area: 2 / 1 / 3 / 2; }
+  .barchart { grid-area: 2 / 2 / 3 / 3; }
+  .scatterplot { grid-area: 2 / 3 / 3 / 4; }
+
+
+.barchart_container {
+  overflow: hidden;
+}
+
+.barchart_titleContainer {
+  cursor: pointer;
+  rect {
+    fill: none;
+    pointer-events: visible;
+    stroke: slategray;
+    &:hover {
+      fill: #ddd;
+    }
+  }
+  text {
+    font-weight: 600;
+    color: darkslategray;
+  }
+}
+
+.linechart{
+  overflow: hidden;
+}
+
+#linechart_container {
+  grid-area: linechart;
+}
+
+#barchartTemperature_container {
+  grid-area: temperature;
+}
+
+#barchartHumidity_container {
+  grid-area: humidity;
+}
+
+#barchartWind_container {
+  grid-area: wind;
+}
+
+#barchartClouds_container {
+  grid-area: clouds;
+}
