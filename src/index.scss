@@ -39,6 +39,9 @@ body {
   .scatterplot { grid-area: 2 / 3 / 3 / 4; }
 
 
+  .linechart{
+    overflow: hidden;
+  }
 .barchart_container {
   overflow: hidden;
 }
@@ -59,9 +62,6 @@ body {
   }
 }
 
-.linechart{
-  overflow: hidden;
-}
 
 #linechart_container {
   grid-area: linechart;

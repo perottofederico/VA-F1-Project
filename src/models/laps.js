@@ -24,7 +24,7 @@ class Laps {
     this.deltas.push(Date.parse(lap.lapStartDate))
 
     // Push the raw objects to an array, for debugging purposes !CHECK
-
+    const timeParse = d3.timeParse('%M:%S.%L')
     if (lap.lapTime !== null) {
       lap.lapTime = lap.lapTime.substring(0, lap.lapTime.length - 3).replace('0 days 00:', '')
       const split1 = lap.lapTime.split(':')
@@ -32,9 +32,11 @@ class Laps {
       // this.lapTimesMs.push(parseInt(split1[0]) * 60000 + parseInt(split2[0]) * 1000 + parseInt(split2[1]))
 
       //
-      const timeParse = d3.timeParse('%M:%S.%L')
+
       this.lapTimesMs.push(timeParse(lap.lapTime))
       lap.lapTime = timeParse(lap.lapTime)
+    } else {
+      lap.lapTime = timeParse('00:00.000')
     }
     this.data.push(lap)
 

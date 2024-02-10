@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 
-const TR_TIME = 500
+const TR_TIME = 250
 
 export default function () {
   let data = []
@@ -14,13 +14,13 @@ export default function () {
   let updateWidth
   let updateHeight
   const dimensions = {
-    width: 600,
+    width: 800,
     height: 400,
     margin: {
       top: 50,
       right: 20,
       bottom: 30,
-      left: 30
+      left: 80
     }
   }
 
@@ -42,7 +42,7 @@ export default function () {
         .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
         .classed('linechart_xAxisContainer', true)
       const yAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${3 * dimensions.margin.left}, ${dimensions.margin.top})`)
+        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
         .classed('linechart_yAxisContainer', true)
 
       const xScale = d3.scaleLinear()
@@ -53,7 +53,7 @@ export default function () {
         .range([0, dimensions.width - dimensions.margin.left - dimensions.margin.right])
         */
 
-      const timeParse = d3.timeParse('%M:%S.%L')
+      // const timeParse = d3.timeParse('%M:%S.%L')
       const yScale = d3.scaleLinear()
         .domain(d3.extent(data.lapTimesMs))
         .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
@@ -61,16 +61,18 @@ export default function () {
       xAxisContainer.call(d3.axisBottom(xScale))
       yAxisContainer.call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
 
-      const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
-      const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
+      // const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
+      // const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
       // const groups = d3.group(data.data, d => d.driver)
       // console.log(points)
-      console.log(groups)
+      // console.log(groups)
       const colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
         '#E6B333', '#3366E6', '#999966', '#99FF99', '#B34D4D', '#80B300',
         '#809900', '#E6B3B3', '#6680B3', '#66991A', '#FF99E6', '#CCFF1A',
         '#FF1A66', '#E6331A', '#33FFCC']
-      bounds.append('g')
+
+      /*
+        bounds.append('g')
         .attr('fill', 'none')
         .attr('stroke', function (d) { return colors[Math.floor(Math.random() * 20)] })
         .attr('stroke-width', 3)
@@ -81,27 +83,55 @@ export default function () {
         .join('path')
         .style('mix-blend-mode', 'multiply')
         .attr('d', d3.line())
-
+*/
       //
       function dataJoin () {
-        bounds.selectAll('g')
+        console.log('dataJoin')
+        const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
+        const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
+        bounds.selectAll('path')
           .data(data)
           .join(enterFn, updateFn, exitFn)
       }
-      // dataJoin()
+      dataJoin()
 
       console.log(data)
 
       function enterFn (sel) {
-
+        console.log('- enterFn')
+        const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
+        const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
+        return sel.append('path')
+          .data(groups.values())
+          .join('path')
+          .attr('fill', 'none')
+          .attr('stroke', function (d) {
+            const rnd = Math.floor(Math.random() * 20)
+            return colors[rnd]
+          })
+          .attr('stroke-width', 1.5)
+          .attr('stroke-linejoin', 'round')
+          .attr('stroke-linecap', 'round')
+          // .style('mix-blend-mode', 'multiply')
+          .attr('d', d3.line())
       }
 
       function updateFn (sel) {
-
+        console.log('updateFn')
+        return sel
+          .call(update => update
+            .transition()
+            .duration(TR_TIME)
+          )
       }
 
       function exitFn (sel) {
-
+        console.log('exitFn')
+        sel.call(exit => exit
+          // .transition()
+          // .duration(TR_TIME)
+          .remove()
+        )
       }
 
       function enterFnRef (sel) {
