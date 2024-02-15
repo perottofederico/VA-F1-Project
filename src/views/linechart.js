@@ -5,11 +5,12 @@ const TR_TIME = 250
 export default function () {
   let data = []
   let deltas = []
-  let xAccessor = d => d.lapsCount
-  let yAttribute = 'lapTimesMs'
-  const yAccessor = d => d.lapTimesMs
+  let xAttribute = 'lapNumber'
+  const xAccessor = d => d.lapNumber
+  let yAttribute = 'delta'
+  const yAccessor = d => d.delta
   let updateData
-  let updateXAccessor
+  let updateXAttribute
   let updateYAttribute
   let updateWidth
   let updateHeight
@@ -27,6 +28,29 @@ export default function () {
   //
   function linechart (selection) {
     selection.each(function () {
+      // For now I'll put this logic here, even if it shouldn't be
+      // I'll worry about moviing it later on.
+      // Also, for now i'll assume the winner is already known
+      // I just want it to work lol
+      const groupedData = d3.group(data.data, d => d.driver)
+
+      function computeDeltas (data) {
+        // console.log([...data])
+        // Assume winner is VER
+        data.forEach(driver => {
+          // console.log(driver)
+          driver.forEach(lap => {
+            // console.log(lap)
+            // get same lap number and its laptime from the winner
+            const winnerLap = data.get('VER').find(winnerLap => winnerLap.lapNumber === lap.lapNumber)
+            const delta = Date.parse(lap.lapStartDate) - Date.parse(winnerLap.lapStartDate)
+            // console.log(delta)
+            lap.delta = delta
+          })
+        })
+      }
+      computeDeltas(groupedData)
+
       //
       const dom = d3.select(this)
 
@@ -46,7 +70,7 @@ export default function () {
         .classed('linechart_yAxisContainer', true)
 
       const xScale = d3.scaleLinear()
-        .domain(d3.extent(data.lapsCount))
+        .domain(d3.extent(data.data, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
       /*
         .domain(data.map(xAccessor))
@@ -54,8 +78,9 @@ export default function () {
         */
 
       // const timeParse = d3.timeParse('%M:%S.%L')
+
       const yScale = d3.scaleLinear()
-        .domain(d3.extent(data.lapTimesMs))
+        .domain(d3.extent(data.data, yAccessor))
         .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
 
       xAxisContainer.call(d3.axisBottom(xScale))
@@ -71,38 +96,25 @@ export default function () {
         '#809900', '#E6B3B3', '#6680B3', '#66991A', '#FF99E6', '#CCFF1A',
         '#FF1A66', '#E6331A', '#33FFCC']
 
-      /*
-        bounds.append('g')
-        .attr('fill', 'none')
-        .attr('stroke', function (d) { return colors[Math.floor(Math.random() * 20)] })
-        .attr('stroke-width', 3)
-        .attr('stroke-linejoin', 'round')
-        .attr('stroke-linecap', 'round')
-        .selectAll('path')
-        .data(groups.values())
-        .join('path')
-        .style('mix-blend-mode', 'multiply')
-        .attr('d', d3.line())
-*/
       //
       function dataJoin () {
-        console.log('dataJoin')
-        const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
-        const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
+        // const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
+        // const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
         bounds.selectAll('path')
-          .data(data)
+          .data(data) // if this is gorups.values() its instance of the graph doesn't get removed, fix
           .join(enterFn, updateFn, exitFn)
       }
       dataJoin()
 
-      console.log(data)
-
       function enterFn (sel) {
-        console.log('- enterFn')
-        const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
+        const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.delta)), d.driver])
         const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
+        console.log(points)
+        console.log([...groups.values()])
+        console.log(groupedData.has(''))
+
         return sel.append('path')
-          .data(groups.values())
+          .data([...groups.values()])
           .join('path')
           .attr('fill', 'none')
           .attr('stroke', function (d) {
@@ -112,12 +124,25 @@ export default function () {
           .attr('stroke-width', 1.5)
           .attr('stroke-linejoin', 'round')
           .attr('stroke-linecap', 'round')
-          // .style('mix-blend-mode', 'multiply')
-          .attr('d', d3.line())
+          .style('mix-blend-mode', 'multiply')
+          .attr('d', d3.line()
+            .x(d => {
+              if (typeof (d[0]) === 'undefined') {
+                console.log('qewr')
+              }
+              return d[0]
+            })
+            .y(d => {
+              if (typeof (d[1]) === 'undefined') {
+                console.log(d[2])
+              }
+              return d[1]
+            })
+
+          )
       }
 
       function updateFn (sel) {
-        console.log('updateFn')
         return sel
           .call(update => update
             .transition()
@@ -126,74 +151,9 @@ export default function () {
       }
 
       function exitFn (sel) {
-        console.log('exitFn')
         sel.call(exit => exit
           // .transition()
           // .duration(TR_TIME)
-          .remove()
-        )
-      }
-
-      function enterFnRef (sel) {
-        const groups = d3.group(data.data, d => d.driver)
-        console.log(groups.values())
-        const line = d3.line()
-          .x(function (d) { return xScale(d.lapNumber) })
-          .y(function (d) { return yScale(d.lapTime) })
-        console.log(sel)
-        return sel.append('path')
-          .attr('class', 'linechart_path')
-          .attr('fill', 'none')
-          .attr('stroke', 'steelblue')
-          .attr('stroke-width', '1.5')
-          .attr('stroke-linejoin', 'round')
-          .attr('stroke-linecap', 'round')
-          .attr('class', 'line')
-          .data(groups)
-          .style('mix-blend-mode', 'multiply')
-          .attr('d', line)
-
-        const path = bounds.append('path')
-          .attr('class', 'linechart_path')
-
-        /*
-          .attr('d', function (d) {
-            return d3.line()
-              .x(function (d) { return x(d.lapNumber) })
-              .y(function (d) { y(d.lapTime) })
-          })
-
-          .attr('x', d => xScale(xAccessor(d)))
-          // .attr('width', xScale.bandwidth())
-          .attr('y', d => yScale(yAccessor(d)))
-          .attr('height', d => yScale.range()[0] - yScale(yAccessor(d)))
-          .style('fill', d => d.selected ? '#c1121f' : '#003049')
-          .on('mouseenter', (_e, d) => onBarEnter(d))
-          .on('mouseleave', (_e, d) => onBarLeave(d))
-          */
-      }
-
-      function updateFnRef (sel) {
-        // sel.style('fill', d => d.selected ? SEL_FILL : BAR_FILL)
-        console.log('updateFn called')
-        /*
-        return sel
-          .call(update => update
-            .transition()
-            .duration(TR_TIME)
-            .attr('x', d => xScale(xAccessor(d)))
-            // .attr('width', xScale.bandwidth())
-            .attr('y', d => yScale(yAccessor(d)))
-            .attr('height', d => yScale.range()[0] - yScale(yAccessor(d)))
-          // .style('fill', d => d.selected ? SEL_FILL : BAR_FILL)
-          )
-          */
-      }
-
-      function exitFnRef (sel) {
-        sel.call(exit => exit
-          .transition()
-          .duration(TR_TIME)
           .remove()
         )
       }
@@ -215,7 +175,7 @@ export default function () {
         dataJoin()
       }
 
-      updateXAccessor = function () {
+      updateXAttribute = function () {
         // xScale.domain(data.map(xAccessor))
         xScale.domain(d3.extent(data.lapsCount))
         xAxisContainer.call(d3.axisBottom(xScale))
@@ -276,8 +236,8 @@ export default function () {
   }
   linechart.xAccessor = function (_) {
     if (!arguments.length) return xAccessor
-    xAccessor = _
-    if (typeof updateXAccessor === 'function') updateXAccessor()
+    xAttribute = _
+    if (typeof updateXAccessor === 'function') updateXAttribute()
     return linechart
   }
   linechart.yAttribute = function (_) {

@@ -14,9 +14,10 @@ export function formatLap (entry) {
     compound: entry.Compound,
     isPersonalBest: entry.IsPersonalBest,
     team: entry.Team,
-    lapStartTime: entry.lapStartTime,
+    lapStartTime: entry.LapStartTime,
     lapStartDate: entry.LapStartDate,
     trackStatus: entry.TrackStatus,
-    position: entry.Position
+    position: entry.Position,
+    delta: 0
   }
 }
