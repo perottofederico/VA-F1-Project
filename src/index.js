@@ -32,8 +32,8 @@ async function init () {
     .attr('id', 'Linechart_container')
   const { width, height } = container.node().getBoundingClientRect()
   controller.linechart
-    .xAccessor(d => d.LapNumber)
-    .yAttribute('linechart')
+    .xAttribute('lapNumber')
+    .yAttribute('delta')
     .width(width)
     .height(height)
   container.call(controller.linechart)

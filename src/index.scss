@@ -23,6 +23,8 @@ body {
   max-width: 100%;
   display: grid;
   overflow: hidden;
+  background-color: #282828;
+  color: #FFFFFF;
 
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
@@ -62,6 +64,9 @@ body {
   }
 }
 
+.dashed{
+  stroke-dasharray: 5,5;
+}
 
 #linechart_container {
   grid-area: linechart;

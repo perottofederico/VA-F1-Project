@@ -28,28 +28,7 @@ export default function () {
   //
   function linechart (selection) {
     selection.each(function () {
-      // For now I'll put this logic here, even if it shouldn't be
-      // I'll worry about moviing it later on.
-      // Also, for now i'll assume the winner is already known
-      // I just want it to work lol
-      const groupedData = d3.group(data.data, d => d.driver)
-
-      function computeDeltas (data) {
-        // console.log([...data])
-        // Assume winner is VER
-        data.forEach(driver => {
-          // console.log(driver)
-          driver.forEach(lap => {
-            // console.log(lap)
-            // get same lap number and its laptime from the winner
-            const winnerLap = data.get('VER').find(winnerLap => winnerLap.lapNumber === lap.lapNumber)
-            const delta = Date.parse(lap.lapStartDate) - Date.parse(winnerLap.lapStartDate)
-            // console.log(delta)
-            lap.delta = delta
-          })
-        })
-      }
-      computeDeltas(groupedData)
+      data.computeDeltas_2(data)
 
       //
       const dom = d3.select(this)
@@ -86,11 +65,8 @@ export default function () {
       xAxisContainer.call(d3.axisBottom(xScale))
       yAxisContainer.call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
 
-      // const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
-      // const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
-      // const groups = d3.group(data.data, d => d.driver)
-      // console.log(points)
-      // console.log(groups)
+      // Group the data based on the driver
+      const groupedData = d3.group(data.data, d => d.driver)
       const colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
         '#E6B333', '#3366E6', '#999966', '#99FF99', '#B34D4D', '#80B300',
         '#809900', '#E6B3B3', '#6680B3', '#66991A', '#FF99E6', '#CCFF1A',
@@ -101,20 +77,14 @@ export default function () {
         // const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
         // const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
         bounds.selectAll('path')
-          .data(data) // if this is gorups.values() its instance of the graph doesn't get removed, fix
+          .data(data) // for some reason if this isn't here the graph doesn't get cleaned properly
           .join(enterFn, updateFn, exitFn)
       }
       dataJoin()
 
       function enterFn (sel) {
-        const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.delta)), d.driver])
-        const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
-        console.log(points)
-        console.log([...groups.values()])
-        console.log(groupedData.has(''))
-
         return sel.append('path')
-          .data([...groups.values()])
+          .data(groupedData.values())
           .join('path')
           .attr('fill', 'none')
           .attr('stroke', function (d) {
@@ -124,21 +94,11 @@ export default function () {
           .attr('stroke-width', 1.5)
           .attr('stroke-linejoin', 'round')
           .attr('stroke-linecap', 'round')
-          .style('mix-blend-mode', 'multiply')
+        // .attr('class', 'dashed')
+        // .style('mix-blend-mode', 'multiply')
           .attr('d', d3.line()
-            .x(d => {
-              if (typeof (d[0]) === 'undefined') {
-                console.log('qewr')
-              }
-              return d[0]
-            })
-            .y(d => {
-              if (typeof (d[1]) === 'undefined') {
-                console.log(d[2])
-              }
-              return d[1]
-            })
-
+            .x(d => { return xScale(d.lapNumber) })
+            .y(d => { return yScale(d.delta) })
           )
       }
 
@@ -234,10 +194,13 @@ export default function () {
     if (typeof updateData === 'function') updateData()
     return linechart
   }
-  linechart.xAccessor = function (_) {
-    if (!arguments.length) return xAccessor
+
+  // originally this was for xAcessor. HAd to change it to make it work and make it symmetrical
+  // why can't i keep it as before? Check commit on 15/02 later
+  linechart.xAttribute = function (_) {
+    if (!arguments.length) return xAttribute
     xAttribute = _
-    if (typeof updateXAccessor === 'function') updateXAttribute()
+    if (typeof updateXAttribute === 'function') updateXAttribute()
     return linechart
   }
   linechart.yAttribute = function (_) {
