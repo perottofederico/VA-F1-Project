@@ -6,20 +6,6 @@ import './index.scss'
 import controller from './controller'
 import { sentenceString, formatLap } from './utils'
 
-/*
-function component() {
-    const element = document.createElement('div');
-
-    // Lodash, currently included via a script, is required for this line to work
-    element.innerHTML = _.join(['Hello', 'webpack'], ' ');
-
-    return element;
-  }
-
-  document.body.appendChild(component());
-  index.html
-*/
-
 async function init () {
   window.d3 = d3
   window.app = controller

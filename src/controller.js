@@ -31,7 +31,6 @@ class Controller {
   onLapsListChanged () {
     // this.views.forEach(v => { this[v].data(this.laps.lapsCount) })
     this.linechart.data(this.laps)
-    this.linechart.deltas(this.laps.deltas)
   }
 }
 

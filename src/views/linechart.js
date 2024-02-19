@@ -1,10 +1,9 @@
 import * as d3 from 'd3'
 
-const TR_TIME = 250
+const TR_TIME = 1000
 
 export default function () {
   let data = []
-  let deltas = []
   let xAttribute = 'lapNumber'
   const xAccessor = d => d.lapNumber
   let yAttribute = 'delta'
@@ -24,10 +23,29 @@ export default function () {
       left: 80
     }
   }
+  function onCircleEnter (e, d) {
+    d3.select('#root')
+      .append('div')
+      .attr('class', 'tooltip')
+      .html('Driver: ' + d.driver + ' \nDelta: ' + d.delta)
+  }
+
+  function onMouseMove (e, d) {
+    // IF the margins are wrong the tooltip appears under the mouse, triggering the mouseleave event
+    // https://stackoverflow.com/questions/15837650/why-is-my-tooltip-flashing-on-and-off
+    d3.select('.tooltip')
+      .style('left', (d3.pointer(e)[0]) + 80 + 'px')
+      .style('top', (d3.pointer(e)[1]) + 20 + 'px')
+  }
+
+  function onCircleLeave (e, d) {
+    d3.selectAll('.tooltip').remove()
+  }
 
   //
   function linechart (selection) {
     selection.each(function () {
+      console.log(data)
       data.computeDeltas_2(data)
 
       //
@@ -56,9 +74,8 @@ export default function () {
         .range([0, dimensions.width - dimensions.margin.left - dimensions.margin.right])
         */
 
-      // const timeParse = d3.timeParse('%M:%S.%L')
-
       const yScale = d3.scaleLinear()
+        // .domain([0, 12000])
         .domain(d3.extent(data.data, yAccessor))
         .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
 
@@ -67,46 +84,63 @@ export default function () {
 
       // Group the data based on the driver
       const groupedData = d3.group(data.data, d => d.driver)
-      const colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
-        '#E6B333', '#3366E6', '#999966', '#99FF99', '#B34D4D', '#80B300',
-        '#809900', '#E6B3B3', '#6680B3', '#66991A', '#FF99E6', '#CCFF1A',
-        '#FF1A66', '#E6331A', '#33FFCC']
+
+      // Probably there's a better way to do this, but why complicate things
+      // Also probably should move this in utils or something like that
+      // https://stackoverflow.com/questions/42963770/how-to-use-d3-js-colorscale-to-change-color-based-on-string-values-rather-than-n
+      function getTeamColor (teamName) {
+        const colors = d3.schemeCategory10
+        switch (teamName) {
+          case 'Red Bull Racing': return colors[0]
+          case 'McLaren': return colors[1]
+          case 'Aston Martin': return colors[2]
+          case 'Ferrari': return colors[3]
+          case 'Mercedes': return colors[4]
+          case 'Alfa Romeo': return colors[5]
+          case 'Alpine': return colors[6]
+          case 'Haas F1 Team': return colors[7]
+          case 'AlphaTauri': return colors[8]
+          case 'Willliams': return colors[9]
+        }
+      }
 
       //
       function dataJoin () {
-        // const points = data.data.map((d) => [xScale(d.lapNumber), yScale((d.lapTime)), d.driver])
-        // const groups = d3.rollup(points, v => Object.assign(v, { z: v[0][2] }), d => d[2])
         bounds.selectAll('path')
-          .data(data) // for some reason if this isn't here the graph doesn't get cleaned properly
+          .data(groupedData.values()) // i used to have d=>d.key() in this but it prevented the graph from updating all the lines for some reason
           .join(enterFn, updateFn, exitFn)
+        // I changed the data binding because it's easier this way
+        // but i wonder if there's a way to chain these two parts
+        bounds.selectAll('circle')
+          .data(data.data)
+          .join(enterCircleFn, updateCircleFn, exitCircleFn)
       }
       dataJoin()
 
       function enterFn (sel) {
         return sel.append('path')
-          .data(groupedData.values())
-          .join('path')
           .attr('fill', 'none')
-          .attr('stroke', function (d) {
-            const rnd = Math.floor(Math.random() * 20)
-            return colors[rnd]
-          })
-          .attr('stroke-width', 1.5)
+          .attr('stroke-width', 2.5)
           .attr('stroke-linejoin', 'round')
           .attr('stroke-linecap', 'round')
         // .attr('class', 'dashed')
         // .style('mix-blend-mode', 'multiply')
+          .attr('stroke', d => getTeamColor(d[0].team))
           .attr('d', d3.line()
-            .x(d => { return xScale(d.lapNumber) })
-            .y(d => { return yScale(d.delta) })
+            .x(d => xScale(d.lapNumber))
+            .y(d => yScale(d.delta))
+            // .curve(d3.curveCatmullRom.alpha(0.5)) // https://d3js.org/d3-shape/curve
           )
       }
 
       function updateFn (sel) {
+        // console.log(sel)
         return sel
-          .call(update => update
-            .transition()
-            .duration(TR_TIME)
+          .call(update => update.transition().duration(TR_TIME)
+            .attr('d', d3.line()
+              .x(d => xScale(d.lapNumber))
+              .y(d => yScale(d.delta))
+            )
           )
       }
 
@@ -118,12 +152,40 @@ export default function () {
         )
       }
 
-      //
+      function enterCircleFn (sel) {
+        // console.log(data)
+        return sel.append('circle')
+          // .data(d => d)
+          .attr('cx', d => xScale(d.lapNumber))
+          .attr('cy', d => yScale(d.delta))
+          .attr('r', dimensions.width / 360)
+          .attr('stroke', d => getTeamColor(d.team))
+          .attr('fill', 'white')
+          .on('mouseenter', (e, d) => onCircleEnter(e, d))
+          .on('mousemove', (e, d) => onMouseMove(e, d))
+          .on('mouseleave', (e, d) => onCircleLeave(e, d))
+      }
+
+      function updateCircleFn (sel) {
+        return sel
+          .call(update => update.transition().duration(TR_TIME)
+            .attr('cx', d => xScale(d.lapNumber))
+            .attr('cy', d => yScale(d.delta))
+            .attr('r', dimensions.width / 360)
+            .attr('stroke', d => getTeamColor(d.team))
+            .attr('fill', 'white')
+          )
+      }
+      function exitCircleFn (sel) {
+        sel.call(exit => exit.remove())
+      }
+
+      // Atm it's not being used but could be useful so i'm keeping it
       updateData = function () {
-        // xScale.domain(data.map(xAccessor))
-        xScale.domain(d3.extent(data.lapsCount))
-        // yScale.domain(d3.extent(data, yAccessor))
-        yScale.domain(d3.extent(data.lapTimesMs))
+        xScale.domain(d3.extent(data.data, xAccessor))
+        // xScale.domain(d3.extent(data.lapsCount))
+        yScale.domain(d3.extent(data.data, yAccessor))
+        // yScale.domain(d3.extent(data.lapTimesMs))
         xAxisContainer
           .transition()
           .duration(TR_TIME)
@@ -179,14 +241,6 @@ export default function () {
     })
   }
 
-  //
-  linechart.deltas = function (_) {
-    if (!arguments.length) return deltas
-    deltas = _
-    if (typeof updateData === 'function') updateData()
-    return linechart
-  }
-
   // stuff for constructor (?)
   linechart.data = function (_) {
     if (!arguments.length) return data
@@ -221,6 +275,8 @@ export default function () {
     if (typeof updateHeight === 'function') updateHeight()
     return linechart
   }
+  //
+
   //
   return linechart
 }
