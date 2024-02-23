@@ -29,25 +29,13 @@ async function init () {
       .attr('class', a)
       .attr('id', `${sentenceString(a)}_container`)
     const { width, height } = container.node().getBoundingClientRect()
-    // const viewName = `${a}`
-    // Lets focus on just the linechart for now
-    /* console.log(controller)
-    // console.log(controller[viewName])
+    const viewName = `${a}`
     controller[viewName]
       .xAccessor(d => console.log(d))
       .yAttribute(a)
       .width(width)
       .height(height)
     container.call(controller[viewName])
-
-    // console.log(controller)
-    controller.linechart
-      .xAccessor(d => d.LapNumber)
-      .yAttribute(a)
-      .width(width)
-      .height(height)
-    container.call(controller.linechart)
-  })
   */
 
   // Lets focus on just the linechart for now
