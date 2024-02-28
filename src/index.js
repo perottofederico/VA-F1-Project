@@ -13,16 +13,23 @@ async function init () {
   const views = ['linechart', 'parallel_coords', 'barchart', 'scatterplot']
 
   // linechart
-  const container = d3.select('#root').append('div')
-    .attr('class', 'linechart')
-    .attr('id', 'Linechart_container')
-  const { width, height } = container.node().getBoundingClientRect()
+
+  const linechart_container = d3.select('#root').append('div')
+    .attr('class', 'linechart_container')
+    .attr('id', 'linechart_container')
+    .append('div')
+    .attr('class', 'linechart_graph')
+    .attr('id', 'linechart_graph')
+  const legendContainer = d3.select('#linechart_container').append('div')
+    .attr('class', 'legend')
+  const { width, height } = linechart_container.node().getBoundingClientRect()
   controller.linechart
     .xAttribute('lapNumber')
     .yAttribute('delta')
     .width(width)
     .height(height)
-  container.call(controller.linechart)
+  linechart_container.call(controller.linechart)
+
   /*
   views.forEach(a => {
     const container = d3.select('#root').append('div')
@@ -40,7 +47,7 @@ async function init () {
 
   // Lets focus on just the linechart for now
   window.addEventListener('resize', _ => {
-    const container = d3.select('#root').select('#Linechart_container')
+    const container = d3.select('#root').select('#linechart_container').select('.linechart_graph')
     const { width, height } = container.node().getBoundingClientRect()
     const viewName = 'linechart'
     controller[viewName]
