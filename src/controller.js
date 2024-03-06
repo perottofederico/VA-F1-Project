@@ -1,18 +1,22 @@
-import models from './models'
-import views from './views'
+import { laps, drivers } from './models'
+import { drivers_legend, linechart } from './views'
 
 class Controller {
   constructor () {
     // Models
-    this.laps = models.laps
+    this.laps = laps
+    this.drivers = drivers
+
     // Views
-    this.views = ['linechart', 'parallel_coords', 'barchart', 'scatterplot']
+    this.views = ['drivers_legend', 'linechart', 'parallel_coords', 'barchart', 'scatterplot']
     // lets start with just linechart
     // this.views.forEach(v => { console.log([v]) })
-    this.linechart = views.linechart()
+    this.linechart = linechart()
+    this.drivers_legend = drivers_legend()
 
     // Models functions binding
     this.laps.bindLapsListChanged(this.onLapsListChanged.bind(this))
+    this.drivers.bindDriversListChanged(this.onDriversListChanged.bind(this))
     // Views functions binding
 
     /*
@@ -24,13 +28,24 @@ class Controller {
     */
   }
 
+  //
+  // Laps
   handleAddLap (lap) {
     this.laps.addLap(lap)
   }
 
   onLapsListChanged () {
-    // this.views.forEach(v => { this[v].data(this.laps.lapsCount) })
     this.linechart.data(this.laps)
+  }
+
+  //
+  // Drivers
+  handleAddDriver (driver) {
+    this.drivers.addDriver(driver)
+  }
+
+  onDriversListChanged () {
+    this.drivers_legend.data(this.drivers)
   }
 }
 

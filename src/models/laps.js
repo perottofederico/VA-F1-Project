@@ -8,7 +8,6 @@ class Laps {
 
   addLap (lap) {
     this.data.push(lap)
-
     this.onLapsListChanged()
   }
 

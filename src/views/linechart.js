@@ -83,8 +83,9 @@ export default function () {
       //
       const dom = d3.select(this)
 
-      const wrapper = dom.append('div')
-        .attr('class', 'linechart_graph')
+      const wrapper = dom
+        // .append('div')
+        // .attr('class', 'linechart_graph')
         .append('svg')
         .attr('width', dimensions.width)
         .attr('height', dimensions.height)
@@ -173,8 +174,6 @@ export default function () {
         yGridContainer.selectAll('.y-grid-lines')
           .data(yScale.ticks())
           .join(enterYGrid, updateYGrid, exitYGrid)
-
-        // .join(enterLegend, updateLegend, exitLegend)
       }
       dataJoin()
 
@@ -323,45 +322,6 @@ export default function () {
       function exitYGrid (sel) {
         return sel.call(exit => exit.remove())
       }
-
-      //
-      function enterLegend (sel) {}
-      function updateLegend (sel) {
-      }
-      function exitLegend (sel) {}
-
-      // Add an interactive legend
-      const legendContainer = d3.select('#linechart_container').append('div')
-        .attr('class', 'legend')
-        .append('svg')
-      console.log(legendContainer.node().getBoundingClientRect().width)
-      legendContainer
-        .attr('height', dimensions.height)
-        .attr('width', legendContainer.node().getBoundingClientRect().width)
-        .selectAll('legend')
-        .data(groupedData.keys())
-        .join('g')
-        // .attr('class', 'legend')
-        .attr('id', d => d)
-        .append('text')
-        .attr('x', function (d, i) {
-          return 30
-        })
-        .attr('y', function (d, i) {
-          return 30 + i * 20 + dimensions.margin.top
-        })
-        .text(function (d) { return d })
-        .style('fill', function (d) { return '#FFFFFF' }) // getTeamColor(d.team) })
-        .style('font-size', 15)
-        .on('click', function (e, d) {
-          console.log(e)
-          console.log(d)
-          // is the element currently visible ?
-          const currentOpacity = d3.selectAll('#' + d).style('opacity')
-          console.log(currentOpacity)
-          // Change the opacity: from 0 to 1 or from 1 to 0
-          d3.selectAll('#' + d).style('opacity', currentOpacity === '1' ? 0.3 : 1)
-        })
 
       // Atm it's not being used but could be useful so i'm keeping it
       updateData = function () {

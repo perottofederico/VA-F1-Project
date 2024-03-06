@@ -33,11 +33,12 @@ body {
       "legend linechart_graph"; 
     grid-area: linechart_container; 
   }
-  .legend { 
+  .drivers_legend { 
     grid-area: legend;
     overflow:hidden;
+    max-width: 150px;
   }
-  .linechart_graph { 
+  .linechart { 
     grid-area: linechart_graph;
     overflow: hidden;
   }
