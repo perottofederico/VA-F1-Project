@@ -27,6 +27,18 @@ export default function () {
     // Change the opacity: from 0 to 1 or from 1 to 0
     d3.selectAll('#' + d.Abbreviation).style('opacity', currentOpacity === '1' ? 0.3 : 1)
   }
+  function onTextEnter (e, d) {
+    // is the element currently visible ?
+    const currentOpacity = d3.selectAll('#' + d.Abbreviation).style('opacity')
+    // Change the opacity: from 0 to 1 or from 1 to 0
+    d3.selectAll('#' + d.Abbreviation).style('opacity', currentOpacity === '1' ? 0.3 : 1)
+  }
+  function onTextLeave (e, d) {
+    // is the element currently visible ?
+    const currentOpacity = d3.selectAll('#' + d.Abbreviation).style('opacity')
+    // Change the opacity: from 0 to 1 or from 1 to 0
+    d3.selectAll('#' + d.Abbreviation).style('opacity', currentOpacity === '1' ? 0.3 : 1)
+  }
 
   function drivers_legend (selection) {
     selection.each(function () {
@@ -50,15 +62,6 @@ export default function () {
         bounds.selectAll('text')
           .data(d3.sort(data.data, d => d.TeamName))
           .join(enterDrivers, updateDrivers, exitDrivers)
-
-        /*
-          .on('click', function (e, d) {
-          // is the element currently visible ?
-            const currentOpacity = d3.selectAll('#' + d).style('opacity')
-            // Change the opacity: from 0 to 1 or from 1 to 0
-            d3.selectAll('#' + d).style('opacity', currentOpacity === '1' ? 0.3 : 1)
-          })
-          */
       }
       dataJoin()
 
@@ -70,7 +73,8 @@ export default function () {
             return (i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
           })
           .attr('y', function (d, i) {
-            return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
+            // return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
+            return (dimensions.height * Math.floor(i / 2) / 10) - dimensions.margin.top
           })
           .text(function (d) { return d.Abbreviation })
           .style('fill', function (d) {
@@ -80,6 +84,8 @@ export default function () {
           // .style('stroke-width', '0.1%')
           // .style('stroke', 'white')
           .on('click', (e, d) => onTextClick(e, d))
+          .on('mouseenter', (e, d) => onTextEnter(e, d))
+          .on('mouseleave', (e, d) => onTextLeave(e, d))
       }
       function updateDrivers (sel) {
         return sel
@@ -88,7 +94,8 @@ export default function () {
               return (i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
             })
             .attr('y', function (d, i) {
-              return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
+              // return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
+              return (dimensions.height * Math.floor(i / 2) / 10) - dimensions.margin.top
             })
           )
       }

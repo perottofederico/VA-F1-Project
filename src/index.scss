@@ -42,11 +42,15 @@ body {
     grid-area: linechart_graph;
     overflow: hidden;
   }
-  .parallel_coordinates_container { grid-area: parallel_coordinates_container; }
+  .parallel_coordinates_container { 
+    grid-area: parallel_coordinates_container;
+    overflow: hidden;
+  }
+  .parallel_coordinates {
+    overflow: hidden;
+  }
   .barchart_container { grid-area: barchart_container; }
   .scatterplot_container { grid-area: scatterplot_container; }
-
-  .parallel_coords { grid-area: 2 / 1 / 3 / 2; }
   .barchart { grid-area: 2 / 2 / 3 / 3; }
   .scatterplot { grid-area: 2 / 3 / 3 / 4; }
 

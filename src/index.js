@@ -4,16 +4,22 @@ import * as d3 from 'd3'
 import './index.scss'
 
 import controller from './controller'
-import { sentenceString, formatLap } from './utils'
+import { sentenceString, formatLap, formatPitStop } from './utils'
 
 async function init () {
   window.d3 = d3
   window.app = controller
   await loadData()
-  const views = ['drivers_legend', 'linechart'] //, 'parallel_coords', 'barchart', 'scatterplot']
+  const linechartViews = ['drivers_legend', 'linechart'] //, 'parallel_coords', 'barchart', 'scatterplot']
+  const views = ['parallel_coordinates']
+
+  // Header
+  const menuContainer = d3.select('#root').append('div')
+    .attr('class', 'header')
+    .append('select')
+    .attr('id', 'selectButton')
 
   // linechart
-
   const linechart_container = d3.select('#root').append('div')
     .attr('class', 'linechart_container')
     .attr('id', 'linechart_container')
@@ -29,15 +35,28 @@ async function init () {
     .height(height)
   linechart_container.call(controller.linechart)
 
+  // Legend
   const legendContainer = d3.select('#linechart_container').append('div')
     .attr('class', 'drivers_legend')
     .attr('id', 'drivers_legend')
-
   controller.drivers_legend
     .width(legendContainer.node().getBoundingClientRect().width)
     .height(legendContainer.node().getBoundingClientRect().height)
   legendContainer.call(controller.drivers_legend)
 
+  // Parallel Coordinates
+  const pcContainer = d3.select('#root').append('div')
+    .attr('class', 'parallel_coordinates_container')
+    .attr('id', 'parallel_coordinates_container')
+  controller.parallel_coordinates
+    .width(pcContainer.node().getBoundingClientRect().width)
+    .height(pcContainer.node().getBoundingClientRect().height)
+  pcContainer.call(controller.parallel_coordinates)
+
+  //
+  const stackedBarchartContainer = d3.select('#root').append('div')
+    .attr('class', 'stacked_barchart_container')
+    .attr('id', 'stacked_barchart_container')
   /*
   views.forEach(a => {
     const container = d3.select('#root').append('div')
@@ -76,9 +95,18 @@ async function init () {
       .height(height2)
   })
   */
+
+  // Need to fix for divs not in linechart_container
   window.addEventListener('resize', _ => {
-    views.forEach(a => {
+    linechartViews.forEach(a => {
       const container = d3.select('#root').select('#linechart_container').select(`.${(a)}`)
+      const { width, height } = container.node().getBoundingClientRect()
+      controller[`${(a)}`]
+        .width(width)
+        .height(height)
+    })
+    views.forEach(a => {
+      const container = d3.select('#root').select(`.${(a)}_container`)
       const { width, height } = container.node().getBoundingClientRect()
       controller[`${(a)}`]
         .width(width)
@@ -89,18 +117,27 @@ async function init () {
 
 async function loadData () {
   try {
-    const lapsData = await d3.csv('/laps.csv', d3.autoType)
+    // Results.csv
+    const results = await d3.csv('/results.csv')
+    results.forEach(driver => {
+      controller.handleAddDriver(driver)
+    })
 
+    // Laps.csv
+    const lapsData = await d3.csv('/laps.csv', d3.autoType)
     // loop over the data and prepare it !CHECK use foreach?
     for (let i = 0; i < lapsData.length; i++) {
       const lap = formatLap(lapsData[i]) // Not sure i even need this but you know
       controller.handleAddLap(lap)
     }
 
-    const results = await d3.csv('/results.csv')
-    results.forEach(driver => {
-      controller.handleAddDriver(driver)
+    // Pitstops.csv
+    const pitStops = await d3.csv('/pitstops.csv')
+    pitStops.forEach(pitStop => {
+      controller.handleAddPitStop(formatPitStop(pitStop))
     })
+
+    // _telemetry.csv
   } catch (e) {
     console.error('Error loadData\n', e)
   }

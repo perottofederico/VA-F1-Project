@@ -1,22 +1,27 @@
-import { laps, drivers } from './models'
-import { drivers_legend, linechart } from './views'
+import { laps, drivers, pitStops, telemetry } from './models'
+import { drivers_legend, linechart, parallel_coordinates } from './views'
 
 class Controller {
   constructor () {
     // Models
     this.laps = laps
     this.drivers = drivers
+    this.pitStops = pitStops
+    this.telemetry = telemetry
 
     // Views
-    this.views = ['drivers_legend', 'linechart', 'parallel_coords', 'barchart', 'scatterplot']
+    this.views = ['drivers_legend', 'linechart', 'parallel_coordinates', 'stacked_barchart', 'scatterplot']
     // lets start with just linechart
     // this.views.forEach(v => { console.log([v]) })
     this.linechart = linechart()
     this.drivers_legend = drivers_legend()
+    this.parallel_coordinates = parallel_coordinates()
 
     // Models functions binding
     this.laps.bindLapsListChanged(this.onLapsListChanged.bind(this))
     this.drivers.bindDriversListChanged(this.onDriversListChanged.bind(this))
+    this.pitStops.bindPitStopsListChanged(this.onPitStopsListChanged.bind(this))
+    this.telemetry.bindTelemetryListChanged(this.onTelemetryListChanged.bind(this))
     // Views functions binding
 
     /*
@@ -36,6 +41,7 @@ class Controller {
 
   onLapsListChanged () {
     this.linechart.data(this.laps)
+    this.parallel_coordinates.laps(this.laps)
   }
 
   //
@@ -46,6 +52,27 @@ class Controller {
 
   onDriversListChanged () {
     this.drivers_legend.data(this.drivers)
+    this.parallel_coordinates.drivers((this.drivers))
+  }
+
+  //
+  // PitStops
+  handleAddPitStop (pitStop) {
+    this.pitStops.addPitStop(pitStop)
+  }
+
+  onPitStopsListChanged () {
+    this.parallel_coordinates.pitStops(this.pitStops)
+  }
+
+  //
+  // Telemtry
+  handleAddTelemetryRow (row) {
+    this.telemetry.addTelemetryRow(row)
+  }
+
+  onTelemetryListChanged () {
+    this.parallel_coordinates.telemetry(this.telemetry)
   }
 }
 

@@ -1,4 +1,5 @@
 import * as d3 from 'd3'
+import { getTeamColor } from '../utils'
 
 const TR_TIME = 250
 
@@ -123,25 +124,6 @@ export default function () {
       // Group the data based on the driver
       const groupedData = d3.group(data.data, d => d.driver)
       // console.log(groupedData)
-
-      // Probably there's a better way to do this, but why complicate things
-      // Also probably should move this in utils or something like that
-      // https://stackoverflow.com/questions/42963770/how-to-use-d3-js-colorscale-to-change-color-based-on-string-values-rather-than-n
-      function getTeamColor (teamName) {
-        const colors = d3.schemeCategory10
-        switch (teamName) {
-          case 'Red Bull Racing': return colors[0]
-          case 'McLaren': return colors[1]
-          case 'Aston Martin': return colors[2]
-          case 'Ferrari': return colors[3]
-          case 'Mercedes': return colors[4]
-          case 'Alfa Romeo': return colors[5]
-          case 'Alpine': return colors[6]
-          case 'Haas F1 Team': return colors[7]
-          case 'AlphaTauri': return colors[8]
-          case 'Williams': return colors[9]
-        }
-      }
 
       //
       function dataJoin () {

@@ -24,17 +24,32 @@ export function formatLap (entry) {
   }
 }
 
+export function formatPitStop (entry) {
+  return {
+    lastName: entry.Driver,
+    team: entry.Team,
+    time: parseFloat(entry['Time (sec)']),
+    lapNumber: entry.Lap
+  }
+}
+
+// Probably there's a better way to do this, but why complicate things
+// https://stackoverflow.com/questions/42963770/how-to-use-d3-js-colorscale-to-change-color-based-on-string-values-rather-than-n
 export function getTeamColor (teamName) {
   const colors = d3.schemeCategory10
   switch (teamName) {
-    case 'Red Bull Racing': return colors[0]
+    case 'Red Bull Racing':
+    case 'Red Bull':
+      return colors[0]
     case 'McLaren': return colors[1]
     case 'Aston Martin': return colors[2]
     case 'Ferrari': return colors[3]
     case 'Mercedes': return colors[4]
     case 'Alfa Romeo': return colors[5]
     case 'Alpine': return colors[6]
-    case 'Haas F1 Team': return colors[7]
+    case 'Haas F1 Team':
+    case 'Haas':
+      return colors[7]
     case 'AlphaTauri': return colors[8]
     case 'Williams': return colors[9]
   }
