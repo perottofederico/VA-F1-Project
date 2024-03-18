@@ -22,6 +22,16 @@ class Drivers {
     return result
   }
 
+  getTeam (abbreviation) {
+    let team = ''
+    this.data.forEach(d => {
+      if (d.Abbreviation === abbreviation) {
+        team = d.TeamName
+      }
+    })
+    return team
+  }
+
   //
   bindDriversListChanged (callback) {
     this.onDriversListChanged = callback

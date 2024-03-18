@@ -78,8 +78,10 @@ export default function () {
   //
   function linechart (selection) {
     selection.each(function () {
-      // console.log(data)
-      data.computeDeltas_2(data)
+      // data.computeDeltas_2(data)
+      // Group the data based on the driver
+      const groupedData = d3.group(data.data, d => d.driver)
+      data.computeDeltas(groupedData)
 
       //
       const dom = d3.select(this)
@@ -120,10 +122,6 @@ export default function () {
       //
       xAxisContainer.call(d3.axisBottom(xScale))
       yAxisContainer.call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
-
-      // Group the data based on the driver
-      const groupedData = d3.group(data.data, d => d.driver)
-      // console.log(groupedData)
 
       //
       function dataJoin () {

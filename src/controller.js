@@ -1,5 +1,5 @@
-import { laps, drivers, pitStops, telemetry } from './models'
-import { drivers_legend, linechart, parallel_coordinates } from './views'
+import { laps, drivers, pitStops, telemetry, pca } from './models'
+import { drivers_legend, linechart, parallel_coordinates, stackedBarchart, scatterPlot } from './views'
 
 class Controller {
   constructor () {
@@ -8,20 +8,24 @@ class Controller {
     this.drivers = drivers
     this.pitStops = pitStops
     this.telemetry = telemetry
+    this.pca = pca
 
     // Views
-    this.views = ['drivers_legend', 'linechart', 'parallel_coordinates', 'stacked_barchart', 'scatterplot']
+    this.views = ['drivers_legend', 'linechart', 'parallel_coordinates', 'stackedBarchart', 'scatterplot']
     // lets start with just linechart
     // this.views.forEach(v => { console.log([v]) })
     this.linechart = linechart()
     this.drivers_legend = drivers_legend()
     this.parallel_coordinates = parallel_coordinates()
+    this.stackedBarchart = stackedBarchart()
+    this.scatterPlot = scatterPlot()
 
     // Models functions binding
     this.laps.bindLapsListChanged(this.onLapsListChanged.bind(this))
     this.drivers.bindDriversListChanged(this.onDriversListChanged.bind(this))
     this.pitStops.bindPitStopsListChanged(this.onPitStopsListChanged.bind(this))
     this.telemetry.bindTelemetryListChanged(this.onTelemetryListChanged.bind(this))
+    this.pca.bindPcaListChanged(this.onPcaListChanged.bind(this))
     // Views functions binding
 
     /*
@@ -42,6 +46,7 @@ class Controller {
   onLapsListChanged () {
     this.linechart.data(this.laps)
     this.parallel_coordinates.laps(this.laps)
+    this.stackedBarchart.laps(this.laps)
   }
 
   //
@@ -52,7 +57,8 @@ class Controller {
 
   onDriversListChanged () {
     this.drivers_legend.data(this.drivers)
-    this.parallel_coordinates.drivers((this.drivers))
+    this.stackedBarchart.drivers(this.drivers)
+    this.parallel_coordinates.drivers(this.drivers)
   }
 
   //
@@ -73,6 +79,16 @@ class Controller {
 
   onTelemetryListChanged () {
     this.parallel_coordinates.telemetry(this.telemetry)
+  }
+
+  //
+  // PCA
+  handleAddRow (row) {
+    this.pca.addPcaRow(row)
+  }
+
+  onPcaListChanged () {
+    this.scatterPlot.data(this.pca)
   }
 }
 

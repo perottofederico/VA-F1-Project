@@ -14,7 +14,7 @@ export default function () {
     width: 100,
     height: 300,
     margin: {
-      top: 40,
+      top: 5,
       right: 60,
       bottom: 30,
       left: 15
@@ -74,13 +74,14 @@ export default function () {
           })
           .attr('y', function (d, i) {
             // return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
-            return (dimensions.height * Math.floor(i / 2) / 10) - dimensions.margin.top
+            return (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top
           })
           .text(function (d) { return d.Abbreviation })
           .style('fill', function (d) {
             return (getTeamColor(d.TeamName))
           })
           .style('font-size', 15)
+          .style('font-weight', 700)
           // .style('stroke-width', '0.1%')
           // .style('stroke', 'white')
           .on('click', (e, d) => onTextClick(e, d))
@@ -95,7 +96,7 @@ export default function () {
             })
             .attr('y', function (d, i) {
               // return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
-              return (dimensions.height * Math.floor(i / 2) / 10) - dimensions.margin.top
+              return (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top
             })
           )
       }

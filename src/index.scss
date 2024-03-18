@@ -18,7 +18,7 @@ body {
   grid-template-areas: 
     "header header header"
     "linechart_container linechart_container linechart_container"
-    "parallel_coordinates_container barchart_container scatterplot_container"; 
+    "parallel_coordinates_container stacked_barchart_container scatterplot_container"; 
   }
   
   
@@ -46,18 +46,14 @@ body {
     grid-area: parallel_coordinates_container;
     overflow: hidden;
   }
-  .parallel_coordinates {
+  .stacked_barchart_container { 
+    grid-area: stacked_barchart_container; 
     overflow: hidden;
   }
-  .barchart_container { grid-area: barchart_container; }
-  .scatterplot_container { grid-area: scatterplot_container; }
-  .barchart { grid-area: 2 / 2 / 3 / 3; }
-  .scatterplot { grid-area: 2 / 3 / 3 / 4; }
-
-
-.barchart_container {
-  overflow: hidden;
-}
+  .scatterplot_container { 
+    grid-area: scatterplot_container; 
+    overflow: hidden;
+  }
 
 .tooltip {
   background-color: white;

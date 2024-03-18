@@ -67,7 +67,6 @@ export default function () {
           PositionsGained: resultsMetrics
         })
       })
-
       // Resolve the promises and update the value
       const avgspeeds = await Promise.all(telemetryPromises)
       avgspeeds.forEach((avgSpeed, i) => {
@@ -88,8 +87,11 @@ export default function () {
       const dom = d3.select(this)
 
       const wrapper = dom
+      /*
         .append('div')
         .attr('class', 'parallel_coordinates')
+        .attr('id', 'parallel_coordinates')
+        */
         .append('svg')
         .attr('width', dimensions.width)
         .attr('height', dimensions.height)
@@ -143,8 +145,9 @@ export default function () {
       function enterLine (sel) {
         return sel.append('path')
           .attr('fill', 'none')
+          .attr('id', d => d.driver)
           .attr('stroke', d => getTeamColor(d.team))
-          .attr('stroke-width', 2.5)
+          .attr('stroke-width', 3.5)
           .attr('d', d => line(d3.cross(metrics, [d], (metric, d) => [metric, d[metric]])))
       }
       function updateLine (sel) {
@@ -192,6 +195,7 @@ export default function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
         wrapper
           .attr('width', dimensions.width)
+
         d3.selectAll('.parallelCoordinates_yAxisContainer')
           .each(function (d) {
             d3.select(this)

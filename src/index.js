@@ -4,14 +4,14 @@ import * as d3 from 'd3'
 import './index.scss'
 
 import controller from './controller'
-import { sentenceString, formatLap, formatPitStop } from './utils'
+import { formatLap, formatPitStop } from './utils'
 
 async function init () {
   window.d3 = d3
   window.app = controller
   await loadData()
-  const linechartViews = ['drivers_legend', 'linechart'] //, 'parallel_coords', 'barchart', 'scatterplot']
-  const views = ['parallel_coordinates']
+  const linechartViews = ['drivers_legend', 'linechart']
+  const views = ['parallel_coordinates', 'stackedBarchart']
 
   // Header
   const menuContainer = d3.select('#root').append('div')
@@ -20,20 +20,20 @@ async function init () {
     .attr('id', 'selectButton')
 
   // linechart
-  const linechart_container = d3.select('#root').append('div')
+  const linechartContainer = d3.select('#root').append('div')
     .attr('class', 'linechart_container')
     .attr('id', 'linechart_container')
     .append('div')
     .attr('class', 'linechart')
     .attr('id', 'linechart')
 
-  const { width, height } = linechart_container.node().getBoundingClientRect()
+  const { width, height } = linechartContainer.node().getBoundingClientRect()
   controller.linechart
     .xAttribute('lapNumber')
     .yAttribute('delta')
     .width(width)
     .height(height)
-  linechart_container.call(controller.linechart)
+  linechartContainer.call(controller.linechart)
 
   // Legend
   const legendContainer = d3.select('#linechart_container').append('div')
@@ -53,10 +53,22 @@ async function init () {
     .height(pcContainer.node().getBoundingClientRect().height)
   pcContainer.call(controller.parallel_coordinates)
 
-  //
+  // Stacked Barchart
   const stackedBarchartContainer = d3.select('#root').append('div')
     .attr('class', 'stacked_barchart_container')
     .attr('id', 'stacked_barchart_container')
+  controller.stackedBarchart
+    .width(stackedBarchartContainer.node().getBoundingClientRect().width)
+    .height(stackedBarchartContainer.node().getBoundingClientRect().height)
+  stackedBarchartContainer.call(controller.stackedBarchart)
+
+  const scatterPlotContainer = d3.select('#root').append('div')
+    .attr('class', 'scatterplot_container')
+    .attr('id', 'scatterplot_container')
+  controller.scatterPlot
+    .width(scatterPlotContainer.node().getBoundingClientRect().width)
+    .height(scatterPlotContainer.node().getBoundingClientRect().height)
+  scatterPlotContainer.call(controller.scatterPlot)
   /*
   views.forEach(a => {
     const container = d3.select('#root').append('div')
@@ -105,13 +117,21 @@ async function init () {
         .width(width)
         .height(height)
     })
+    // How is this working lmao please fix this spoiler its not workingeiurngboqiuergboiquyerbgvf
     views.forEach(a => {
-      const container = d3.select('#root').select(`.${(a)}_container`)
+      const container = d3.select('#root').select('.stacked_barchart_container')
       const { width, height } = container.node().getBoundingClientRect()
       controller[`${(a)}`]
         .width(width)
         .height(height)
+      console.log('views foreach: ' + width + ', ' + height)
     })
+    const container = d3.select('#root').select('#scatterplot_container')
+    const { width, height } = container.node().getBoundingClientRect()
+    controller.scatterPlot
+      .width(width)
+      .height(height)
+    console.log('scatterplot: ' + width + ', ' + height)
   })
 }
 
@@ -138,6 +158,12 @@ async function loadData () {
     })
 
     // _telemetry.csv
+
+    // PCA.csv
+    const pca = await d3.csv('/PCA.csv')
+    pca.forEach(row => {
+      controller.handleAddRow(row)
+    })
   } catch (e) {
     console.error('Error loadData\n', e)
   }

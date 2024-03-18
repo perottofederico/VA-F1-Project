@@ -20,7 +20,6 @@ class Telemetry {
         divisor += 1
       }
     })
-    console.log(divisor)
     return parseFloat((total / divisor).toFixed(2))
   }
 

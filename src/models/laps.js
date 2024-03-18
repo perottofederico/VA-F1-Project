@@ -31,12 +31,13 @@ class Laps {
     // console.log([...data])
     // FIX this, need to know the real winner (even though its most likely VER lol)
     // For now assume winner is VER
+    const winner = drivers.data[0].Abbreviation
     groupedLaps.forEach(driver => {
       // console.log(driver)
       driver.forEach(lap => {
         // console.log(lap)
         // get same lap number and its laptime from the winner
-        const winnerLap = groupedLaps.get('VER').find(winnerLap => winnerLap.lapNumber === lap.lapNumber)
+        const winnerLap = groupedLaps.get(winner).find(winnerLap => winnerLap.lapNumber === lap.lapNumber)
         const delta = Date.parse(lap.lapStartDate) - Date.parse(winnerLap.lapStartDate)
         // console.log(delta)
         lap.delta = delta
@@ -140,6 +141,27 @@ class Laps {
   millisecondsToLaptime (ms) {
     const format = d3.timeFormat('%M:%S.%L')
     return format(ms)
+  }
+
+  //
+  computeTyreStrategies (groupedLaps) {
+    const graphData = []
+    groupedLaps.forEach(driverlaps => {
+      const stints = d3.group(driverlaps, d => d.stint)
+
+      let lapOfPitstop = 0
+      stints.forEach(stint => {
+        graphData.push({
+          driver: stint[0].driver,
+          team: stint[0].team,
+          compound: stint[0].compound,
+          length: stint.length,
+          lap: lapOfPitstop
+        })
+        lapOfPitstop += stint.length
+      })
+    })
+    return graphData
   }
 
   //
