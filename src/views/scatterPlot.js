@@ -79,7 +79,7 @@ export default function () {
           .attr('r', dimensions.width / 360) // maybe change this ratio
           .attr('stroke', d => getTeamColor(d.Team))
           // .attr('stroke-width', 2)
-          // .attr('fill', 'white')
+          .attr('fill', d => getTeamColor(d.Team))
           .attr('id', d => d.Driver)
           .append('text')
           .text('CAPYBARA')
@@ -91,7 +91,7 @@ export default function () {
             .attr('cy', d => yScale(parseFloat(d.PC2)))
             .attr('r', dimensions.width / 360)
             .attr('stroke', d => getTeamColor(d.Team))
-            // .attr('fill', 'white')
+            .attr('fill', d => getTeamColor(d.Team))
           )
       }
       function exitCircleFn (sel) {
