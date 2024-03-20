@@ -4,20 +4,29 @@ import * as d3 from 'd3'
 import './index.scss'
 
 import controller from './controller'
-import { formatLap, formatPitStop } from './utils'
+import { formatLap, formatPitStop, getRacesList } from './utils'
 
 async function init () {
   window.d3 = d3
   window.app = controller
   await loadData()
   const linechartViews = ['drivers_legend', 'linechart']
-  const views = ['parallel_coordinates', 'stackedBarchart']
+  const views = ['parallel_coordinates', 'stackedBarchart', 'scatterPlot']
 
   // Header
+  const list = getRacesList()
   const menuContainer = d3.select('#root').append('div')
     .attr('class', 'header')
     .append('select')
     .attr('id', 'selectButton')
+    .attr('class', 'selection')
+    .on('change', () => updateData())
+    
+  menuContainer.selectAll('option')
+  .data(list).enter()
+  .append('option')
+  .attr('value', d=> d)
+  .text(d => d)
 
   // linechart
   const linechartContainer = d3.select('#root').append('div')
@@ -55,60 +64,23 @@ async function init () {
 
   // Stacked Barchart
   const stackedBarchartContainer = d3.select('#root').append('div')
-    .attr('class', 'stacked_barchart_container')
-    .attr('id', 'stacked_barchart_container')
+    .attr('class', 'stackedBarchart_container')
+    .attr('id', 'stackedBarchart_container')
   controller.stackedBarchart
     .width(stackedBarchartContainer.node().getBoundingClientRect().width)
     .height(stackedBarchartContainer.node().getBoundingClientRect().height)
   stackedBarchartContainer.call(controller.stackedBarchart)
 
+  //Scatterplot
   const scatterPlotContainer = d3.select('#root').append('div')
-    .attr('class', 'scatterplot_container')
-    .attr('id', 'scatterplot_container')
+    .attr('class', 'scatterPlot_container')
+    .attr('id', 'scatterPlot_container')
   controller.scatterPlot
     .width(scatterPlotContainer.node().getBoundingClientRect().width)
     .height(scatterPlotContainer.node().getBoundingClientRect().height)
   scatterPlotContainer.call(controller.scatterPlot)
-  /*
-  views.forEach(a => {
-    const container = d3.select('#root').append('div')
-      .attr('class', a)
-      .attr('id', `${sentenceString(a)}_container`)
-    const { width, height } = container.node().getBoundingClientRect()
-    const viewName = `${a}`
-    controller[viewName]
-      .xAccessor(d => console.log(d))
-      .yAttribute(a)
-      .width(width)
-      .height(height)
-    container.call(controller[viewName])
-  */
 
-  // Lets focus on just the linechart for now
-  /*
-  window.addEventListener('resize', _ => {
-    let container = d3.select('#root').select('#linechart_container').select('.linechart_graph')
-    const { width, height } = container.node().getBoundingClientRect()
-    let viewName = 'linechart'
-    controller[viewName]
-      .width(width)
-      .height(height)
-
-    //
-    container = d3.select('#root').select('#linechart_container').select('.legend')
-
-    const width2 = container.node().getBoundingClientRect().width
-    const height2 = container.node().getBoundingClientRect().height
-    console.log(controller)
-    viewName = 'drivers_legend'
-
-    controller[viewName]
-      .width(width2)
-      .height(height2)
-  })
-  */
-
-  // Need to fix for divs not in linechart_container
+  // Window resize listener
   window.addEventListener('resize', _ => {
     linechartViews.forEach(a => {
       const container = d3.select('#root').select('#linechart_container').select(`.${(a)}`)
@@ -117,21 +89,13 @@ async function init () {
         .width(width)
         .height(height)
     })
-    // How is this working lmao please fix this spoiler its not workingeiurngboqiuergboiquyerbgvf
     views.forEach(a => {
-      const container = d3.select('#root').select('.stacked_barchart_container')
+      const container = d3.select('#root').select(`.${(a)}_container`)
       const { width, height } = container.node().getBoundingClientRect()
       controller[`${(a)}`]
         .width(width)
         .height(height)
-      console.log('views foreach: ' + width + ', ' + height)
     })
-    const container = d3.select('#root').select('#scatterplot_container')
-    const { width, height } = container.node().getBoundingClientRect()
-    controller.scatterPlot
-      .width(width)
-      .height(height)
-    console.log('scatterplot: ' + width + ', ' + height)
   })
 }
 
@@ -144,13 +108,11 @@ async function loadData () {
     })
 
     // Laps.csv
-    const lapsData = await d3.csv('/laps.csv', d3.autoType)
-    // loop over the data and prepare it !CHECK use foreach?
-    for (let i = 0; i < lapsData.length; i++) {
-      const lap = formatLap(lapsData[i]) // Not sure i even need this but you know
-      controller.handleAddLap(lap)
-    }
-
+    const lapsData = await d3.csv('/laps.csv', d3.autoType) //apparently removing d3.autoType breaks the app lol, i wonder if it would help in the parallel coordinates
+    lapsData.forEach(lap => {
+      controller.handleAddLap(formatLap(lap))
+    })
+    
     // Pitstops.csv
     const pitStops = await d3.csv('/pitstops.csv')
     pitStops.forEach(pitStop => {
@@ -164,6 +126,53 @@ async function loadData () {
     pca.forEach(row => {
       controller.handleAddRow(row)
     })
+  } catch (e) {
+    console.error('Error loadData\n', e)
+  }
+}
+
+async function updateData() {
+  const round = d3.select('.selection').node().value
+  try {
+    /*
+    // Results.csv
+    controller.handleDeleteDrivers()
+    const results = await d3.csv(`/${round}/results.csv`, d3.autoType)
+    console.log(results)
+    results.forEach(driver => {
+      controller.handleAddDriver(driver)
+    })
+    */
+    // Laps.csv
+    console.log('starting laps ...')
+    controller.emptyLapList()
+    const lapsData = await d3.csv(`/${round}/laps.csv`, d3.autoType).then(laps => {
+      laps.forEach( lap => {
+        controller.handleAddLap(formatLap(lap))
+      })
+    }) //apparently removing d3.autoType breaks the app lol, i wonder if it would help in the parallel coordinates
+    
+    console.log('finished laps')
+    /*
+    // Pitstops.csv
+    console.log('starting pitstops ...')
+    const pitStops = await d3.csv(`/${round}/pitstops.csv`, d3.autoType).then( data => console.log(data) )
+    pitStops.forEach(pitStop => {
+      console.log(pitStop)
+      controller.handleAddPitStop(formatPitStop(pitStop))
+    })
+    console.log('finished pitstops')
+
+    // _telemetry.csv
+
+    // PCA.csv
+    console.log('starting pca')
+    const pca = await d3.csv('/PCA.csv')
+    pca.forEach(row => {
+      controller.handleAddRow(row)
+    })
+    console.log('done')
+    */
   } catch (e) {
     console.error('Error loadData\n', e)
   }

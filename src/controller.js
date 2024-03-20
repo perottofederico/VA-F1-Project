@@ -42,6 +42,9 @@ class Controller {
   handleAddLap (lap) {
     this.laps.addLap(lap)
   }
+  emptyLapList(){
+    this.laps.emptyList()
+  }
 
   onLapsListChanged () {
     this.linechart.data(this.laps)
@@ -53,6 +56,9 @@ class Controller {
   // Drivers
   handleAddDriver (driver) {
     this.drivers.addDriver(driver)
+  }
+  handleDeleteDrivers(){
+    this.drivers.deleteDriver()
   }
 
   onDriversListChanged () {

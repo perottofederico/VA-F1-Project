@@ -46,11 +46,11 @@ body {
     grid-area: parallel_coordinates_container;
     overflow: hidden;
   }
-  .stacked_barchart_container { 
+  .stackedBarchart_container { 
     grid-area: stacked_barchart_container; 
     overflow: hidden;
   }
-  .scatterplot_container { 
+  .scatterPlot_container { 
     grid-area: scatterplot_container; 
     overflow: hidden;
   }

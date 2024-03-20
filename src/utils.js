@@ -54,3 +54,10 @@ export function getTeamColor (teamName) {
     case 'Williams': return colors[9]
   }
 }
+
+export function getRacesList(){
+  //Wanted to get the list directly from acessing the directory but don't want to add a dependency, this is easy
+  const list = ['1_Sakhir', '2_Jeddah', '3_Melbourne', '4_Baku', '5_Miami', '6_Monaco', '7_Barcelona', '8_Montréal', '9_Spielberg', '10_Silverstone', '11_Budapest',
+  '12_Spa-Francorchamps', '13_Zandvoort', '14_Monza', '15_Marina Bay', '16_Suzuka', '17_Lusail', '18_Austin', '19_Mexico City', '20_São Paulo', '21_Las Vegas', '22_Yas Island']
+  return list
+}

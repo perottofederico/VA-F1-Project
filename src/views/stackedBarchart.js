@@ -62,7 +62,7 @@ export default function () {
       yAxisContainer.call(d3.axisLeft(yScale))
 
       //
-      // Color y axis ticks
+      // Color y axis labels
       d3.select('.stacked_barchart_yAxisContainer')
         .selectAll('.tick text')
         .attr('id', d => d)

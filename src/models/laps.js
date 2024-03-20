@@ -12,6 +12,7 @@ class Laps {
     // this can be due to multiple reasons(red flags, crashes, retirements, pit stops)
     // in the case of pitstops, it is useful to compute them separately
     // in the case of red flags and DNFs we can tell the application to ignore them
+    /*
     if (lap.lapTime === null) {
       // Red flag
       if (lap.trackStatus % 5) {
@@ -22,11 +23,14 @@ class Laps {
         // handle pitstop lap
       }
     }
-
+    */
     this.data.push(lap)
     this.onLapsListChanged()
   }
-
+  emptyList(){
+    this.data = []
+  }
+  
   computeDeltas (groupedLaps) {
     // console.log([...data])
     // FIX this, need to know the real winner (even though its most likely VER lol)

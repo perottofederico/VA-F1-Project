@@ -10,7 +10,10 @@ class Drivers {
     this.data.push(driver)
     this.onDriversListChanged()
   }
-
+  deleteDriver(){
+    this.data = []
+    this.onDriversListChanged()
+  }
   //
   computeMetrics (lastName) {
     let result = 0

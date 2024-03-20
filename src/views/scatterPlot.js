@@ -28,7 +28,6 @@ export default function () {
   //
   function scatterPlot (selection) {
     selection.each(function () {
-      console.log(data)
       // console.log(typeof data.data[0].PC1) // why is it a string??????????????
       //
       const dom = d3.select(this)
@@ -41,7 +40,6 @@ export default function () {
       //
       const bounds = wrapper.append('g')
         .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-      console.log(bounds)
       const xAxisContainer = wrapper.append('g')
         .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height / 2})`)
         .classed('scatterplot_xAxisContainer', true)
@@ -115,21 +113,6 @@ export default function () {
         dataJoin()
       }
 
-      updateXAttribute = function () {
-        // xScale.domain(data.map(xAccessor))
-        xScale.domain(d3.extent(data.lapsCount))
-        xAxisContainer.call(d3.axisBottom(xScale))
-        dataJoin()
-      }
-
-      updateYAttribute = function () {
-        // yScale.domain(d3.extent(data, yAccessor))
-        yScale.domain(d3.extent(data.deltas))
-        // titleContainer.select('text').html(yAttribute.charAt(0).toUpperCase() + yAttribute.slice(1))
-        yAxisContainer.call(d3.axisLeft(yScale))
-        dataJoin()
-      }
-
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
         wrapper
@@ -173,7 +156,7 @@ export default function () {
     })
   }
 
-  // stuff for constructor (?)
+
   scatterPlot.data = function (_) {
     if (!arguments.length) return data
     data = _
@@ -189,7 +172,6 @@ export default function () {
   scatterPlot.height = function (_) {
     if (!arguments.length) return dimensions.height
     dimensions.height = _
-    console.log('scatterplot - height: ' + dimensions.height)
     if (typeof updateHeight === 'function') updateHeight()
     return scatterPlot
   }

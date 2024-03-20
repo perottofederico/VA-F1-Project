@@ -80,6 +80,7 @@ export default function () {
           .style('fill', function (d) {
             return (getTeamColor(d.TeamName))
           })
+          .style('opacity', d => d.Status !== 'Finished' ? 0.3 : 1)
           .style('font-size', 15)
           .style('font-weight', 700)
           // .style('stroke-width', '0.1%')

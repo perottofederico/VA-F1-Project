@@ -78,7 +78,7 @@ export default function () {
   //
   function linechart (selection) {
     selection.each(function () {
-      // data.computeDeltas_2(data)
+      //console.log(data)
       // Group the data based on the driver
       const groupedData = d3.group(data.data, d => d.driver)
       data.computeDeltas(groupedData)
@@ -113,7 +113,6 @@ export default function () {
       const xScale = d3.scaleLinear()
         .domain(d3.extent(data.data, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-
       const yScale = d3.scaleLinear()
         // .domain([0, 12000])
         .domain(d3.extent(data.data, yAccessor))
@@ -125,6 +124,7 @@ export default function () {
 
       //
       function dataJoin () {
+        const groupedData = d3.group(data.data, d => d.driver)
         // Add rectangles to represent track status
         bounds.selectAll('rect')
           .data(groupedData.get('VER').filter(lap => lap.trackStatus !== 1)) // i'm passing the first driver, but should make sure i pass the winner so all laps are considered
@@ -238,13 +238,21 @@ export default function () {
           .attr('r', dimensions.width / 360) // maybe change this ratio
           .attr('stroke', d => getTeamColor(d.team))
           .attr('stroke-width', 2)
-          .attr('fill', 'white')
+          .attr('fill', d => getTeamColor(d.team))
           .attr('id', d => d.driver)
           .on('mouseenter', (e, d) => onCircleEnter(e, d))
           .on('mousemove', (e, d) => onMouseMove(e, d))
           .on('mouseleave', (e, d) => onCircleLeave(e, d))
-          .append('text')
-          .text('CAPYBARA')
+
+        //This looks terrible lmao
+        return sel.append('text')
+          .data(data.data)
+          .text(d => d.compound.charAt(0))
+          .attr('x', d => xScale(d.lapNumber) - 2)
+          .attr('y', d => yScale(d.delta) + 2)
+          .attr('stroke', 'white')
+          .attr('style', 'font-size: 7')
+          .style('font-weight', 200)
       }
       function updateCircleFn (sel) {
         return sel
@@ -253,7 +261,7 @@ export default function () {
             .attr('cy', d => yScale(d.delta))
             .attr('r', dimensions.width / 360)
             .attr('stroke', d => getTeamColor(d.team))
-            .attr('fill', 'white')
+            .attr('fill', d => getTeamColor(d.team))
           )
       }
       function exitCircleFn (sel) {
@@ -306,9 +314,7 @@ export default function () {
       // Atm it's not being used but could be useful so i'm keeping it
       updateData = function () {
         xScale.domain(d3.extent(data.data, xAccessor))
-        // xScale.domain(d3.extent(data.lapsCount))
         yScale.domain(d3.extent(data.data, yAccessor))
-        // yScale.domain(d3.extent(data.lapTimesMs))
         xAxisContainer
           .transition()
           .duration(TR_TIME)
@@ -366,7 +372,7 @@ export default function () {
     })
   }
 
-  // stuff for constructor (?)
+  
   linechart.data = function (_) {
     if (!arguments.length) return data
     data = _

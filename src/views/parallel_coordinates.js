@@ -51,7 +51,7 @@ export default function () {
         // The telemetry of each car is saved in a file named based on the driver's number
         // This is because originally the data is in a dictionary of dataframes, where the driver's number is the key
         const driverNumber = d[0].driverNumber
-        telemetryPromises.push(d3.csv(`./telemetry/${driverNumber}_telemetry.csv`).then(telemetryData => {
+        telemetryPromises.push(d3.csv(`./telemetry/${driverNumber}_telemetry.csv`, d3.autoType).then(telemetryData => {
           return telemetry.computeMetrics(telemetryData, Date.parse(d[0].lapStartDate))
         }))
 
@@ -74,7 +74,7 @@ export default function () {
       })
 
       //
-      //
+      //Create the different scaled for the different metrics
       const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']
       const yScales = {}
       metrics.forEach(m => {
@@ -87,11 +87,6 @@ export default function () {
       const dom = d3.select(this)
 
       const wrapper = dom
-      /*
-        .append('div')
-        .attr('class', 'parallel_coordinates')
-        .attr('id', 'parallel_coordinates')
-        */
         .append('svg')
         .attr('width', dimensions.width)
         .attr('height', dimensions.height)
@@ -107,10 +102,9 @@ export default function () {
         const xAxisContainer = wrapper.append('g')
         .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
         .classed('parallelCoordinates_xAxisContainer', true)
+      xAxisContainer.call(d3.axisBottom(xScale)).style('font-size', 12)
       */
-
-      // xAxisContainer.call(d3.axisBottom(xScale)).style('font-size', 12)
-
+     
       wrapper.selectAll('yAxis')
         .data(metrics)
         .enter()
@@ -167,7 +161,6 @@ export default function () {
 
       //
       updateData = function () {
-        console.log(upda)
         xScale.domain(metrics)
         metrics.forEach(m => {
           yScales[m] = d3.scaleLinear()
