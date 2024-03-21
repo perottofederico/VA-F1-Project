@@ -1,0 +1,24 @@
+,8
+RoundNumber,8
+Country,Canada
+Location,Montréal
+OfficialEventName,FORMULA 1 PIRELLI GRAND PRIX DU CANADA 2023
+EventDate,2023-06-18 00:00:00
+EventName,Canadian Grand Prix
+EventFormat,conventional
+Session1,Practice 1
+Session1Date,2023-06-16 13:30:00-04:00
+Session1DateUtc,2023-06-16 17:30:00
+Session2,Practice 2
+Session2Date,2023-06-16 16:30:00-04:00
+Session2DateUtc,2023-06-16 20:30:00
+Session3,Practice 3
+Session3Date,2023-06-17 12:30:00-04:00
+Session3DateUtc,2023-06-17 16:30:00
+Session4,Qualifying
+Session4Date,2023-06-17 16:00:00-04:00
+Session4DateUtc,2023-06-17 20:00:00
+Session5,Race
+Session5Date,2023-06-18 14:00:00-04:00
+Session5DateUtc,2023-06-18 18:00:00
+F1ApiSupport,True

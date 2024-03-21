@@ -1,0 +1,12 @@
+,Time,Status,Message
+0,0 days 00:05:28.637000,1,AllClear
+1,0 days 00:21:59.040000,2,Yellow
+2,0 days 00:22:03.165000,1,AllClear
+3,0 days 01:03:07.651000,2,Yellow
+4,0 days 01:03:08.151000,1,AllClear
+5,0 days 01:04:15.978000,2,Yellow
+6,0 days 01:04:51.243000,1,AllClear
+7,0 days 02:08:59.830000,2,Yellow
+8,0 days 02:09:18.298000,6,VSCDeployed
+9,0 days 02:10:53.875000,7,VSCEnding
+10,0 days 02:11:06.437000,1,AllClear

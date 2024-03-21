@@ -1,0 +1,24 @@
+,7
+RoundNumber,8
+Country,Spain
+Location,Barcelona
+OfficialEventName,FORMULA 1 AWS GRAN PREMIO DE ESPAÑA 2023
+EventDate,2023-06-04 00:00:00
+EventName,Spanish Grand Prix
+EventFormat,conventional
+Session1,Practice 1
+Session1Date,2023-06-02 13:30:00+02:00
+Session1DateUtc,2023-06-02 11:30:00
+Session2,Practice 2
+Session2Date,2023-06-02 17:00:00+02:00
+Session2DateUtc,2023-06-02 15:00:00
+Session3,Practice 3
+Session3Date,2023-06-03 12:30:00+02:00
+Session3DateUtc,2023-06-03 10:30:00
+Session4,Qualifying
+Session4Date,2023-06-03 16:00:00+02:00
+Session4DateUtc,2023-06-03 14:00:00
+Session5,Race
+Session5Date,2023-06-04 15:00:00+02:00
+Session5DateUtc,2023-06-04 13:00:00
+F1ApiSupport,True
