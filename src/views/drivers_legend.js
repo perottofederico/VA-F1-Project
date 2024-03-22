@@ -1,7 +1,7 @@
 import * as d3 from 'd3'
 import { getTeamColor } from '../utils'
 
-const TR_TIME = 250
+const TR_TIME = 500
 
 export default function () {
   let data = []
@@ -10,6 +10,8 @@ export default function () {
   let updateData
   let updateWidth
   let updateHeight
+  let svg
+  let bounds
   const dimensions = {
     width: 100,
     height: 300,
@@ -42,15 +44,6 @@ export default function () {
 
   function drivers_legend (selection) {
     selection.each(function () {
-      //
-      const dom = d3.select(this)
-      const wrapper = dom
-        .append('svg')
-        .attr('width', dimensions.width)
-        .attr('height', dimensions.height)
-      const bounds = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-
       const xScale = d3.scaleLinear()
         .domain(d3.extent(data.data, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
@@ -119,13 +112,13 @@ export default function () {
       }
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-        wrapper
+        svg
           .attr('width', dimensions.width < 150 ? dimensions.width : 150)
         dataJoin()
       }
       updateHeight = function () {
         yScale.range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
-        wrapper
+        svg
           .attr('height', dimensions.height)
         dataJoin()
       }
@@ -138,7 +131,6 @@ export default function () {
     if (typeof updateData === 'function') updateData()
     return drivers_legend
   }
-
   drivers_legend.width = function (_) {
     if (!arguments.length) return dimensions.width
     dimensions.width = _
@@ -151,6 +143,15 @@ export default function () {
     if (typeof updateHeight === 'function') updateHeight()
     return drivers_legend
   }
+  drivers_legend.initChart = function (selection) {
+    svg = selection.append('svg')
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
 
+    bounds = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+
+    return { svg, bounds }
+  }
   return drivers_legend
 }

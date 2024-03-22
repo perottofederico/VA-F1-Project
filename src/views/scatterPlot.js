@@ -1,19 +1,19 @@
 import * as d3 from 'd3'
 import { getTeamColor } from '../utils'
 
-const TR_TIME = 250
+const TR_TIME = 500
 
 export default function () {
   let data = []
-  const xAttribute = 'lapNumber'
-  const xAccessor = d => parseFloat(d.PC1)
-  const yAttribute = 'delta'
+  const xAccessor = d => parseFloat(d.PC1)// for some reason PC1 and PC2 are treated as strings, so i need to parse them.
   const yAccessor = d => parseFloat(d.PC2)
   let updateData
-  let updateXAttribute
-  let updateYAttribute
   let updateWidth
   let updateHeight
+  let svg
+  let bounds
+  let xAxisContainer
+  let yAxisContainer
   const dimensions = {
     width: 800,
     height: 400,
@@ -28,24 +28,6 @@ export default function () {
   //
   function scatterPlot (selection) {
     selection.each(function () {
-      // console.log(typeof data.data[0].PC1) // why is it a string??????????????
-      //
-      const dom = d3.select(this)
-
-      const wrapper = dom
-        .append('svg')
-        .attr('width', dimensions.width)
-        .attr('height', dimensions.height)
-
-      //
-      const bounds = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-      const xAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height / 2})`)
-        .classed('scatterplot_xAxisContainer', true)
-      const yAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.margin.top})`)
-        .classed('scatterplot_yAxisContainer', true)
       const xScale = d3.scaleLinear()
         .domain(d3.extent(data.data, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
@@ -60,11 +42,8 @@ export default function () {
 
       //
       function dataJoin () {
-        // Add the dots on top of the linechart
-        // I changed the data binding because it's easier this way
-        // but i wonder if there's a way to chain the scatter and line plot
         bounds.selectAll('circle')
-          .data(data.data)
+          .data(data.data, d => d.Driver)
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
       }
       dataJoin()
@@ -115,7 +94,7 @@ export default function () {
 
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-        wrapper
+        svg
           .attr('width', dimensions.width)
 
         xAxisContainer
@@ -136,7 +115,7 @@ export default function () {
 
       updateHeight = function () {
         yScale.range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
-        wrapper
+        svg
           .attr('height', dimensions.height)
 
         xAxisContainer
@@ -156,7 +135,6 @@ export default function () {
     })
   }
 
-
   scatterPlot.data = function (_) {
     if (!arguments.length) return data
     data = _
@@ -175,8 +153,22 @@ export default function () {
     if (typeof updateHeight === 'function') updateHeight()
     return scatterPlot
   }
-  //
+  scatterPlot.initChart = function (selection) {
+    svg = selection
+      .append('svg')
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
 
+    //
+    bounds = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+    xAxisContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height / 2})`)
+      .classed('scatterplot_xAxisContainer', true)
+    yAxisContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.margin.top})`)
+      .classed('scatterplot_yAxisContainer', true)
+  }
   //
   return scatterPlot
 }

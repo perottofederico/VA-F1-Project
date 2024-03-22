@@ -42,9 +42,6 @@ class Controller {
   handleAddLap (lap) {
     this.laps.addLap(lap)
   }
-  emptyLapList(){
-    this.laps.emptyList()
-  }
 
   onLapsListChanged () {
     this.linechart.data(this.laps)
@@ -56,9 +53,6 @@ class Controller {
   // Drivers
   handleAddDriver (driver) {
     this.drivers.addDriver(driver)
-  }
-  handleDeleteDrivers(){
-    this.drivers.deleteDriver()
   }
 
   onDriversListChanged () {
@@ -94,6 +88,27 @@ class Controller {
   }
 
   onPcaListChanged () {
+    this.scatterPlot.data(this.pca)
+  }
+
+  //
+  deleteAllData () {
+    this.laps.deleteData()
+    this.drivers.deleteData()
+    this.pitStops.deleteData()
+    this.telemetry.deleteData()
+    this.pca.deleteData()
+  }
+
+  handleRaceChanged () {
+    this.linechart.data(this.laps)
+    this.parallel_coordinates.laps(this.laps)
+    this.stackedBarchart.laps(this.laps)
+    this.drivers_legend.data(this.drivers)
+    this.stackedBarchart.drivers(this.drivers)
+    this.parallel_coordinates.drivers(this.drivers)
+    this.parallel_coordinates.pitStops(this.pitStops)
+    this.parallel_coordinates.telemetry(this.telemetry)
     this.scatterPlot.data(this.pca)
   }
 }

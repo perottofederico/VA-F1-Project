@@ -3,12 +3,12 @@ import * as d3 from 'd3'
 class PitStops {
   constructor () {
     this.data = []
-    this.onPitStopsListChanged = () => {}
+    // this.onPitStopsListChanged = () => {}
   }
 
   addPitStop (pitStop) {
     this.data.push(pitStop)
-    this.onPitStopsListChanged()
+    // this.onPitStopsListChanged()
   }
 
   computeMetrics (lastName) {
@@ -24,6 +24,11 @@ class PitStops {
   //
   bindPitStopsListChanged (callback) {
     this.onPitStopsListChanged = callback
+  }
+
+  //
+  deleteData () {
+    this.data = []
   }
 }
 

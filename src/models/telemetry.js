@@ -3,12 +3,12 @@ import * as d3 from 'd3'
 class Telemetry {
   constructor () {
     this.data = []
-    this.onTelemetryListChanged = () => {}
+    // this.onTelemetryListChanged = () => {}
   }
 
   addTelemetryRow (row) {
     this.data.push(row.Speed)
-    this.onTelemetryListChanged()
+    // this.onTelemetryListChanged()
   }
 
   computeMetrics (csv, startDate, endDate) {
@@ -26,6 +26,11 @@ class Telemetry {
   //
   bindTelemetryListChanged (callback) {
     this.onTelemetryListChanged = callback
+  }
+
+  //
+  deleteData () {
+    this.data = []
   }
 }
 

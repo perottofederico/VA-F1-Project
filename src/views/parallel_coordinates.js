@@ -3,15 +3,18 @@ import { getTeamColor } from '../utils'
 import telemetry from '@/models/telemetry'
 import controller from '../controller'
 
-const TR_TIME = 250
+const TR_TIME = 500
 
 export default function () {
   let laps = []
   let pitStops = []
   let drivers = []
+  let telemetry = []
   let updateData
   let updateWidth
   let updateHeight
+  let svg
+  let bounds
   const dimensions = {
     width: 800,
     height: 400,
@@ -74,7 +77,7 @@ export default function () {
       })
 
       //
-      //Create the different scaled for the different metrics
+      // Create the different scaled for the different metrics
       const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']
       const yScales = {}
       metrics.forEach(m => {
@@ -82,17 +85,6 @@ export default function () {
           .domain(d3.extent(graphData, d => (d[m])))
           .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
       })
-
-      //
-      const dom = d3.select(this)
-
-      const wrapper = dom
-        .append('svg')
-        .attr('width', dimensions.width)
-        .attr('height', dimensions.height)
-
-      const bounds = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
 
       const xScale = d3.scalePoint()
         .domain(metrics)
@@ -104,8 +96,9 @@ export default function () {
         .classed('parallelCoordinates_xAxisContainer', true)
       xAxisContainer.call(d3.axisBottom(xScale)).style('font-size', 12)
       */
-     
-      wrapper.selectAll('yAxis')
+
+      // TODO: atm when new data arrives, the new y axis are overlapping with the old, which don't get deleted
+      svg.selectAll('yAxis')
         .data(metrics)
         .enter()
         .append('g')
@@ -186,7 +179,7 @@ export default function () {
       }
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-        wrapper
+        svg
           .attr('width', dimensions.width)
 
         d3.selectAll('.parallelCoordinates_yAxisContainer')
@@ -201,7 +194,7 @@ export default function () {
         metrics.forEach(m => {
           yScales[m].range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
         })
-        wrapper
+        svg
           .attr('height', dimensions.height)
 
         d3.selectAll('.parallelCoordinates_yAxisContainer')
@@ -259,6 +252,16 @@ export default function () {
     dimensions.height = _
     if (typeof updateHeight === 'function') updateHeight()
     return parallel_coordinates
+  }
+  parallel_coordinates.initChart = function (selection) {
+    //
+    svg = selection
+      .append('svg')
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
+
+    bounds = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
   }
 
   //

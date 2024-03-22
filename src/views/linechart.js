@@ -1,19 +1,21 @@
 import * as d3 from 'd3'
 import { getTeamColor } from '../utils'
 
-const TR_TIME = 250
+const TR_TIME = 500
 
 export default function () {
   let data = []
-  let xAttribute = 'lapNumber'
   const xAccessor = d => d.lapNumber
-  let yAttribute = 'delta'
   const yAccessor = d => d.delta
   let updateData
-  let updateXAttribute
-  let updateYAttribute
   let updateWidth
   let updateHeight
+  let svg
+  let bounds
+  let xAxisContainer
+  let yAxisContainer
+  let xGridContainer
+  let yGridContainer
   const dimensions = {
     width: 800,
     height: 400,
@@ -67,6 +69,7 @@ export default function () {
     d3.selectAll('circle')
       .filter((d, i) => d.driver !== e.target.id)
       .attr('opacity', 0.4)
+    console.log(e.target.id)
   }
   function onLineLeave (e, d) {
     d3.select('g').selectAll('path')
@@ -78,38 +81,12 @@ export default function () {
   //
   function linechart (selection) {
     selection.each(function () {
-      //console.log(data)
+      // console.log(data)
       // Group the data based on the driver
       const groupedData = d3.group(data.data, d => d.driver)
       data.computeDeltas(groupedData)
 
       //
-      const dom = d3.select(this)
-
-      const wrapper = dom
-        // .append('div')
-        // .attr('class', 'linechart_graph')
-        .append('svg')
-        .attr('width', dimensions.width)
-        .attr('height', dimensions.height)
-
-      //
-      const bounds = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-
-      const xAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
-        .classed('linechart_xAxisContainer', true)
-      const xGridContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-        .classed('linechart_xGridContainer', true)
-      const yAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-        .classed('linechart_yAxisContainer', true)
-      const yGridContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-        .classed('linechart_yGridContainer', true)
-
       const xScale = d3.scaleLinear()
         .domain(d3.extent(data.data, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
@@ -126,13 +103,15 @@ export default function () {
       function dataJoin () {
         const groupedData = d3.group(data.data, d => d.driver)
         // Add rectangles to represent track status
+        // console.log('---------rects')
         bounds.selectAll('rect')
           .data(groupedData.get('VER').filter(lap => lap.trackStatus !== 1)) // i'm passing the first driver, but should make sure i pass the winner so all laps are considered
           .join(enterTrackStatus, updateTrackStatus, exitTrackStatus)
 
         // Add lines to represent deltas
+        // console.log('----------lines')
         bounds.selectAll('path')
-          .data(groupedData.values()) // i used to have d=>d.key() in this but it prevented the graph from updating all the lines for some reason
+          .data(groupedData.values(), d => d[0].driver) // i used to have d=>d.key() in this but it prevented the graph from updating all the lines for some reason
           .join(enterFn, updateFn, exitFn)
 
         // Add the dots on top of the linechart
@@ -243,17 +222,8 @@ export default function () {
           .on('mouseenter', (e, d) => onCircleEnter(e, d))
           .on('mousemove', (e, d) => onMouseMove(e, d))
           .on('mouseleave', (e, d) => onCircleLeave(e, d))
-
-        //This looks terrible lmao
-        return sel.append('text')
-          .data(data.data)
-          .text(d => d.compound.charAt(0))
-          .attr('x', d => xScale(d.lapNumber) - 2)
-          .attr('y', d => yScale(d.delta) + 2)
-          .attr('stroke', 'white')
-          .attr('style', 'font-size: 7')
-          .style('font-weight', 200)
       }
+
       function updateCircleFn (sel) {
         return sel
           .call(update => update.transition().duration(TR_TIME)
@@ -311,7 +281,7 @@ export default function () {
         return sel.call(exit => exit.remove())
       }
 
-      // Atm it's not being used but could be useful so i'm keeping it
+      //
       updateData = function () {
         xScale.domain(d3.extent(data.data, xAccessor))
         yScale.domain(d3.extent(data.data, yAccessor))
@@ -324,26 +294,12 @@ export default function () {
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale))
         dataJoin()
-      }
-
-      updateXAttribute = function () {
-        // xScale.domain(data.map(xAccessor))
-        xScale.domain(d3.extent(data.lapsCount))
-        xAxisContainer.call(d3.axisBottom(xScale))
-        dataJoin()
-      }
-
-      updateYAttribute = function () {
-        // yScale.domain(d3.extent(data, yAccessor))
-        yScale.domain(d3.extent(data.deltas))
-        // titleContainer.select('text').html(yAttribute.charAt(0).toUpperCase() + yAttribute.slice(1))
-        yAxisContainer.call(d3.axisLeft(yScale))
-        dataJoin()
+        console.log('data updated')
       }
 
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-        wrapper
+        svg
           .attr('width', dimensions.width)
 
         xAxisContainer
@@ -356,7 +312,7 @@ export default function () {
 
       updateHeight = function () {
         yScale.range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
-        wrapper
+        svg
           .attr('height', dimensions.height)
         xAxisContainer
           .transition()
@@ -372,26 +328,10 @@ export default function () {
     })
   }
 
-  
   linechart.data = function (_) {
     if (!arguments.length) return data
     data = _
     if (typeof updateData === 'function') updateData()
-    return linechart
-  }
-
-  // originally this was for xAcessor. HAd to change it to make it work and make it symmetrical
-  // why can't i keep it as before? Check commit on 15/02 later
-  linechart.xAttribute = function (_) {
-    if (!arguments.length) return xAttribute
-    xAttribute = _
-    if (typeof updateXAttribute === 'function') updateXAttribute()
-    return linechart
-  }
-  linechart.yAttribute = function (_) {
-    if (!arguments.length) return yAttribute
-    yAttribute = _
-    if (typeof updateYAttribute === 'function') updateYAttribute()
     return linechart
   }
   linechart.width = function (_) {
@@ -406,8 +346,29 @@ export default function () {
     if (typeof updateHeight === 'function') updateHeight()
     return linechart
   }
-  //
+  linechart.initChart = function (selection) {
+    svg = selection.append('svg')
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
 
+    bounds = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+
+    xAxisContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
+      .classed('linechart_xAxisContainer', true)
+    xGridContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+      .classed('linechart_xGridContainer', true)
+    yAxisContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+      .classed('linechart_yAxisContainer', true)
+    yGridContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+      .classed('linechart_yGridContainer', true)
+
+    return { svg, bounds, xAxisContainer, xGridContainer, yAxisContainer, yGridContainer }
+  }
   //
   return linechart
 }

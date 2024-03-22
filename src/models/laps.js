@@ -3,7 +3,7 @@ import { drivers } from '../models'
 class Laps {
   constructor () {
     this.data = []
-    this.onLapsListChanged = () => {}
+    // this.onLapsListChanged = () => {}
   }
 
   addLap (lap) {
@@ -25,12 +25,9 @@ class Laps {
     }
     */
     this.data.push(lap)
-    this.onLapsListChanged()
+    // this.onLapsListChanged()
   }
-  emptyList(){
-    this.data = []
-  }
-  
+
   computeDeltas (groupedLaps) {
     // console.log([...data])
     // FIX this, need to know the real winner (even though its most likely VER lol)
@@ -171,6 +168,11 @@ class Laps {
   //
   bindLapsListChanged (callback) {
     this.onLapsListChanged = callback
+  }
+
+  //
+  deleteData () {
+    this.data = []
   }
 }
 

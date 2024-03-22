@@ -3,17 +3,14 @@ import * as d3 from 'd3'
 class Drivers {
   constructor () {
     this.data = []
-    this.onDriversListChanged = () => {}
+    // this.onDriversListChanged = () => {}
   }
 
   addDriver (driver) {
     this.data.push(driver)
-    this.onDriversListChanged()
+    // this.onDriversListChanged()
   }
-  deleteDriver(){
-    this.data = []
-    this.onDriversListChanged()
-  }
+
   //
   computeMetrics (lastName) {
     let result = 0
@@ -37,7 +34,13 @@ class Drivers {
 
   //
   bindDriversListChanged (callback) {
+    console.log('binded callback called in drivers')
     this.onDriversListChanged = callback
+  }
+
+  //
+  deleteData () {
+    this.data = []
   }
 }
 

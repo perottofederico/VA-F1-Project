@@ -12,10 +12,10 @@ async function init () {
   setupPage()
 
   // Wait for data to be loaded
-  await loadData()
+  await updateData()
 
   // Populate views
-  populateViews()
+  // populateViews()
 
   // Window resize listener
   window.addEventListener('resize', _ => {
@@ -46,40 +46,71 @@ function setupPage () {
     .append('div')
     .attr('class', 'linechart')
     .attr('id', 'linechart')
+  const linechartContainer = d3.select('#linechart')
+  const { width, height } = linechartContainer.node().getBoundingClientRect()
+  controller.linechart
+    .width(width)
+    .height(height)
+  controller.linechart.initChart(linechartContainer)
 
   d3.select('#linechart_container').append('div')
     .attr('class', 'drivers_legend')
     .attr('id', 'drivers_legend')
+  const legendContainer = d3.select('#drivers_legend')
+  controller.drivers_legend
+    .width(legendContainer.node().getBoundingClientRect().width)
+    .height(legendContainer.node().getBoundingClientRect().height)
+  controller.drivers_legend.initChart(legendContainer)
 
   d3.select('#root').append('div')
     .attr('class', 'parallel_coordinates_container')
     .attr('id', 'parallel_coordinates_container')
+  const pcContainer = d3.select('#parallel_coordinates_container')
+  controller.parallel_coordinates
+    .width(pcContainer.node().getBoundingClientRect().width)
+    .height(pcContainer.node().getBoundingClientRect().height)
+  controller.parallel_coordinates.initChart(pcContainer)
 
   d3.select('#root').append('div')
     .attr('class', 'stackedBarchart_container')
     .attr('id', 'stackedBarchart_container')
+  const stackedBarchartContainer = d3.select('#stackedBarchart_container')
+  controller.stackedBarchart
+    .width(stackedBarchartContainer.node().getBoundingClientRect().width)
+    .height(stackedBarchartContainer.node().getBoundingClientRect().height)
+  controller.stackedBarchart.initChart(stackedBarchartContainer)
 
   d3.select('#root').append('div')
     .attr('class', 'scatterPlot_container')
     .attr('id', 'scatterPlot_container')
+  const scatterPlotContainer = d3.select(('#scatterPlot_container'))
+  controller.scatterPlot
+    .width(scatterPlotContainer.node().getBoundingClientRect().width)
+    .height(scatterPlotContainer.node().getBoundingClientRect().height)
+  controller.scatterPlot.initChart(scatterPlotContainer)
 }
 
-async function loadData () {
+async function updateData () {
+  controller.deleteAllData()
+  const round = d3.select('.selection').node().value
   try {
+    // Update data for selected round
+    console.log('Starting data update for round:', round)
+
     // Results.csv
-    const results = await d3.csv('/results.csv')
+    const results = await d3.csv(`/${round}/results.csv`)
     results.forEach(driver => {
       controller.handleAddDriver(driver)
     })
 
     // Laps.csv
-    const lapsData = await d3.csv('/laps.csv', d3.autoType)
+    const lapsData = await d3.csv(`/${round}/laps.csv`, d3.autoType)
     lapsData.forEach(lap => {
       controller.handleAddLap(formatLap(lap))
     })
 
     // Pitstops.csv
-    const pitStops = await d3.csv('/pitstops.csv')
+    const pitStops = await d3.csv(`/${round}/pitstops.csv`)
     pitStops.forEach(pitStop => {
       controller.handleAddPitStop(formatPitStop(pitStop))
     })
@@ -87,75 +118,37 @@ async function loadData () {
     // _telemetry.csv
 
     // PCA.csv
-    const pca = await d3.csv('/PCA.csv')
+    const pca = await d3.csv(`/${round}/PCA.csv`)
     pca.forEach(row => {
       controller.handleAddRow(row)
     })
-  } catch (e) {
-    console.error('Error loadData\n', e)
-  }
-}
-
-async function updateData () {
-  const round = d3.select('.selection').node().value
-  try {
-    // Update data for selected round
-    console.log('Starting data update for round:', round)
-
-    // Laps.csv
-    console.log('Starting laps update ...')
-    controller.emptyLapList()
-    const lapsData = await d3.csv(`/${round}/laps.csv`, d3.autoType)
-    lapsData.forEach(lap => {
-      controller.handleAddLap(formatLap(lap))
-    })
-    console.log('Finished laps update')
-
-    // Other data updates can go here
-
     console.log('Data update complete')
   } catch (e) {
     console.error('Error updating data\n', e)
   }
+  controller.handleRaceChanged()
+  populateViews()
 }
 
 function populateViews () {
   // Legend
   const legendContainer = d3.select('#drivers_legend')
-  controller.drivers_legend
-    .width(legendContainer.node().getBoundingClientRect().width)
-    .height(legendContainer.node().getBoundingClientRect().height)
   legendContainer.call(controller.drivers_legend)
 
   // Linechart
   const linechartContainer = d3.select('#linechart')
-  const { width, height } = linechartContainer.node().getBoundingClientRect()
-  controller.linechart
-    .xAttribute('lapNumber')
-    .yAttribute('delta')
-    .width(width)
-    .height(height)
   linechartContainer.call(controller.linechart)
 
   // Parallel Coordinates
   const pcContainer = d3.select('#parallel_coordinates_container')
-  controller.parallel_coordinates
-    .width(pcContainer.node().getBoundingClientRect().width)
-    .height(pcContainer.node().getBoundingClientRect().height)
   pcContainer.call(controller.parallel_coordinates)
 
   // Stacked Barchart
   const stackedBarchartContainer = d3.select('#stackedBarchart_container')
-  controller.stackedBarchart
-    .width(stackedBarchartContainer.node().getBoundingClientRect().width)
-    .height(stackedBarchartContainer.node().getBoundingClientRect().height)
   stackedBarchartContainer.call(controller.stackedBarchart)
 
-  // SCatterplot
+  // Scatterplot
   const scatterPlotContainer = d3.select(('#scatterPlot_container'))
-  controller.scatterPlot
-    .width(scatterPlotContainer.node().getBoundingClientRect().width)
-    .height(scatterPlotContainer.node().getBoundingClientRect().height)
   scatterPlotContainer.call(controller.scatterPlot)
 }
 

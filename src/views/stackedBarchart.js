@@ -1,7 +1,7 @@
 import * as d3 from 'd3'
 import { getTeamColor } from '../utils'
 
-const TR_TIME = 250
+const TR_TIME = 500
 
 export default function () {
   let laps = []
@@ -9,6 +9,10 @@ export default function () {
   let updateData
   let updateWidth
   let updateHeight
+  let svg
+  let bounds
+  let xAxisContainer
+  let yAxisContainer
   const dimensions = {
     width: 800,
     height: 400,
@@ -27,25 +31,6 @@ export default function () {
       const groupedLaps = d3.group(laps.data, d => d.driver)
       const graphData = laps.computeTyreStrategies(groupedLaps)
 
-      //
-      const dom = d3.select(this)
-
-      const wrapper = dom
-        .append('svg')
-        .attr('width', dimensions.width)
-        .attr('height', dimensions.height)
-
-      const bounds = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-
-      const xAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
-        .classed('stacked_barchart_xAxisContainer', true)
-
-      const yAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-        .classed('stacked_barchart_yAxisContainer', true)
-
       const xScale = d3.scaleLinear()
         // domain from 0 to length of the set of laps of the drivers that finished first
         // (results are sorted by finishing order)
@@ -61,7 +46,6 @@ export default function () {
       xAxisContainer.call(d3.axisBottom(xScale))
       yAxisContainer.call(d3.axisLeft(yScale))
 
-      //
       // Color y axis labels
       d3.select('.stacked_barchart_yAxisContainer')
         .selectAll('.tick text')
@@ -125,7 +109,7 @@ export default function () {
       }
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-        wrapper
+        svg
           .attr('width', dimensions.width)
 
         xAxisContainer
@@ -137,7 +121,7 @@ export default function () {
       }
       updateHeight = function () {
         yScale.range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
-        wrapper
+        svg
           .attr('height', dimensions.height)
         xAxisContainer
           .transition()
@@ -176,6 +160,21 @@ export default function () {
     dimensions.height = _
     if (typeof updateHeight === 'function') updateHeight()
     return stackedBarchart
+  }
+  stackedBarchart.initChart = function (selection) {
+    svg = selection.append('svg')
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
+    bounds = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+    xAxisContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
+      .classed('stacked_barchart_xAxisContainer', true)
+    yAxisContainer = svg.append('g')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+      .classed('stacked_barchart_yAxisContainer', true)
+
+    return { svg, bounds, xAxisContainer, yAxisContainer }
   }
 
   return stackedBarchart
