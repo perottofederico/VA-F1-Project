@@ -1,7 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor } from '../utils'
-import telemetry from '@/models/telemetry'
-import controller from '../controller'
+import { getTeamColor, isSecondDriver } from '../utils'
 
 const TR_TIME = 500
 
@@ -135,6 +133,7 @@ export default function () {
           .attr('id', d => d.driver)
           .attr('stroke', d => getTeamColor(d.team))
           .attr('stroke-width', 3.5)
+          .attr('class', d => isSecondDriver(d.driver) ? 'dashed' : '')
           .attr('d', d => line(d3.cross(metrics, [d], (metric, d) => [metric, d[metric]])))
       }
       function updateLine (sel) {

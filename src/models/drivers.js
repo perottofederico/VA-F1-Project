@@ -34,7 +34,6 @@ class Drivers {
 
   //
   bindDriversListChanged (callback) {
-    console.log('binded callback called in drivers')
     this.onDriversListChanged = callback
   }
 

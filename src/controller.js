@@ -102,6 +102,7 @@ class Controller {
 
   handleRaceChanged () {
     this.linechart.data(this.laps)
+    this.linechart.results(this.drivers)
     this.parallel_coordinates.laps(this.laps)
     this.stackedBarchart.laps(this.laps)
     this.drivers_legend.data(this.drivers)

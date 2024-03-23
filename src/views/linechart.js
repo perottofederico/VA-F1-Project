@@ -1,10 +1,11 @@
 import * as d3 from 'd3'
-import { getTeamColor } from '../utils'
+import { getTeamColor, isSecondDriver } from '../utils'
 
 const TR_TIME = 500
 
 export default function () {
   let data = []
+  let results = []
   const xAccessor = d => d.lapNumber
   const yAccessor = d => d.delta
   let updateData
@@ -81,11 +82,11 @@ export default function () {
   //
   function linechart (selection) {
     selection.each(function () {
-      // console.log(data)
       // Group the data based on the driver
       const groupedData = d3.group(data.data, d => d.driver)
       data.computeDeltas(groupedData)
-
+      // the results are ordered in finishing order, so the winner will be at index 0
+      const winner = results.data[0].Abbreviation
       //
       const xScale = d3.scaleLinear()
         .domain(d3.extent(data.data, xAccessor))
@@ -103,15 +104,13 @@ export default function () {
       function dataJoin () {
         const groupedData = d3.group(data.data, d => d.driver)
         // Add rectangles to represent track status
-        // console.log('---------rects')
         bounds.selectAll('rect')
-          .data(groupedData.get('VER').filter(lap => lap.trackStatus !== 1)) // i'm passing the first driver, but should make sure i pass the winner so all laps are considered
+          .data(groupedData.get(winner).filter(lap => lap.trackStatus !== 1)) // i'm passing the first driver, but should make sure i pass the winner so all laps are considered
           .join(enterTrackStatus, updateTrackStatus, exitTrackStatus)
 
         // Add lines to represent deltas
-        // console.log('----------lines')
         bounds.selectAll('path')
-          .data(groupedData.values(), d => d[0].driver) // i used to have d=>d.key() in this but it prevented the graph from updating all the lines for some reason
+          .data(groupedData.values(), d => d[0].driver)
           .join(enterFn, updateFn, exitFn)
 
         // Add the dots on top of the linechart
@@ -178,7 +177,7 @@ export default function () {
           .attr('stroke-width', 2.5)
           .attr('stroke-linejoin', 'round')
           .attr('stroke-linecap', 'round')
-          // .attr('class', 'dashed') // find a way to use this for drivers of the same team
+          .attr('class', d => isSecondDriver(d[0].driver) ? 'dashed' : '') // find a way to use this for drivers of the same team
           // .style('mix-blend-mode', 'multiply')
           .attr('stroke', d => getTeamColor(d[0].team)) // I'm using d[0] to get the property i want from the first lap in the intern map
           .attr('id', d => d[0].driver)
@@ -331,6 +330,12 @@ export default function () {
   linechart.data = function (_) {
     if (!arguments.length) return data
     data = _
+    if (typeof updateData === 'function') updateData()
+    return linechart
+  }
+  linechart.results = function (_) {
+    if (!arguments.length) return results
+    results = _
     if (typeof updateData === 'function') updateData()
     return linechart
   }

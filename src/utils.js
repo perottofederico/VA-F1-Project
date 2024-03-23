@@ -61,3 +61,10 @@ export function getRacesList () {
     '12_Spa-Francorchamps', '13_Zandvoort', '14_Monza', '15_Marina Bay', '16_Suzuka', '17_Lusail', '18_Austin', '19_Mexico City', '20_São Paulo', '21_Las Vegas', '22_Yas Island']
   return list
 }
+
+export function isSecondDriver (abbreviation) {
+  const secondDrivers = ['ZHO', 'TSU', 'OCO', 'STR', 'SAI', 'MAG',
+    'PIA', 'RUS', 'PER', 'SAR']
+  if (secondDrivers.includes(abbreviation)) return true
+  else return false
+}

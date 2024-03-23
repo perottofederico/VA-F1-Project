@@ -40,54 +40,49 @@ function setupPage () {
     .text(d => d)
 
   // Containers for views
-  d3.select('#root').append('div')
+  const linechartContainer = d3.select('#root').append('div')
     .attr('class', 'linechart_container')
     .attr('id', 'linechart_container')
     .append('div')
     .attr('class', 'linechart')
     .attr('id', 'linechart')
-  const linechartContainer = d3.select('#linechart')
   const { width, height } = linechartContainer.node().getBoundingClientRect()
   controller.linechart
     .width(width)
     .height(height)
-  controller.linechart.initChart(linechartContainer)
+    .initChart(linechartContainer)
 
-  d3.select('#linechart_container').append('div')
+  const legendContainer = d3.select('#linechart_container').append('div')
     .attr('class', 'drivers_legend')
     .attr('id', 'drivers_legend')
-  const legendContainer = d3.select('#drivers_legend')
   controller.drivers_legend
     .width(legendContainer.node().getBoundingClientRect().width)
     .height(legendContainer.node().getBoundingClientRect().height)
-  controller.drivers_legend.initChart(legendContainer)
+    .initChart(legendContainer)
 
-  d3.select('#root').append('div')
+  const pcContainer = d3.select('#root').append('div')
     .attr('class', 'parallel_coordinates_container')
     .attr('id', 'parallel_coordinates_container')
-  const pcContainer = d3.select('#parallel_coordinates_container')
   controller.parallel_coordinates
     .width(pcContainer.node().getBoundingClientRect().width)
     .height(pcContainer.node().getBoundingClientRect().height)
-  controller.parallel_coordinates.initChart(pcContainer)
+    .initChart(pcContainer)
 
-  d3.select('#root').append('div')
+  const stackedBarchartContainer = d3.select('#root').append('div')
     .attr('class', 'stackedBarchart_container')
     .attr('id', 'stackedBarchart_container')
-  const stackedBarchartContainer = d3.select('#stackedBarchart_container')
   controller.stackedBarchart
     .width(stackedBarchartContainer.node().getBoundingClientRect().width)
     .height(stackedBarchartContainer.node().getBoundingClientRect().height)
-  controller.stackedBarchart.initChart(stackedBarchartContainer)
+    .initChart(stackedBarchartContainer)
 
-  d3.select('#root').append('div')
+  const scatterPlotContainer = d3.select('#root').append('div')
     .attr('class', 'scatterPlot_container')
     .attr('id', 'scatterPlot_container')
-  const scatterPlotContainer = d3.select(('#scatterPlot_container'))
   controller.scatterPlot
     .width(scatterPlotContainer.node().getBoundingClientRect().width)
     .height(scatterPlotContainer.node().getBoundingClientRect().height)
-  controller.scatterPlot.initChart(scatterPlotContainer)
+    .initChart(scatterPlotContainer)
 }
 
 async function updateData () {
@@ -114,8 +109,6 @@ async function updateData () {
     pitStops.forEach(pitStop => {
       controller.handleAddPitStop(formatPitStop(pitStop))
     })
-
-    // _telemetry.csv
 
     // PCA.csv
     const pca = await d3.csv(`/${round}/PCA.csv`)
