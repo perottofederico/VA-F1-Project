@@ -293,7 +293,6 @@ export default function () {
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale))
         dataJoin()
-        console.log('data updated')
       }
 
       updateWidth = function () {

@@ -132,11 +132,19 @@ class Laps {
   }
 
   laptimeToMilliseconds (lapTime) {
-    const time = lapTime.replace('0 days 00:', '').slice(0, -3)
+    const time = lapTime.replace('0 days 00:', '')
     const minutes = parseInt(time.split(':')[0])
-    const seconds = parseInt(time.split(':')[1].split('.')[0])
-
-    return minutes * 60000 + seconds * 1000 + parseInt(time.split('.')[1])
+    let seconds = 0
+    let ms = 0
+    // For some reason some laptimes don't include the milliseconds.
+    // This if statement handles that case.
+    if (time.split(':')[1].includes('.')) {
+      seconds = parseInt(time.split(':')[1].split('.')[0])
+      // laptimes actually are in microseconds
+      // but the last 3 numbers are always 0, so i remove them
+      ms = parseInt(time.split('.')[1].slice(0, -3))
+    }
+    return minutes * 60000 + seconds * 1000 + ms
   }
 
   millisecondsToLaptime (ms) {

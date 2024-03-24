@@ -96,13 +96,10 @@ export default function () {
       xAxisContainer.call(d3.axisBottom(xScale)).style('font-size', 12)
       */
 
-      // TODO: atm when new data arrives, the new y axis are overlapping with the old, which don't get deleted
-      svg.selectAll('yAxis')
+      // Update the y axis
+      svg.selectAll('.parallelCoordinates_yAxisContainer')
         .data(metrics)
-        .enter()
-        .append('g')
         .attr('transform', d => `translate(${dimensions.margin.left + xScale((d))}, ${dimensions.margin.top})`)
-        .classed('parallelCoordinates_yAxisContainer', true)
         .each(function (d) {
           if (d === 'AvgLaptime') {
             d3.select(this).call(d3.axisLeft().scale(yScales[d]).tickFormat(d3.timeFormat('%M:%S.%L')))
@@ -110,12 +107,6 @@ export default function () {
             d3.select(this).call(d3.axisLeft().scale(yScales[d]))
           }
         })
-        .append('text')
-        .style('text-anchor', 'middle')
-        .attr('y', -9)
-        .text(d => d)
-        .style('fill', 'white')
-        .style('font-size', 12)
 
       //
       const line = d3.line()
@@ -155,6 +146,7 @@ export default function () {
       //
       updateData = function () {
         xScale.domain(metrics)
+          .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
         metrics.forEach(m => {
           yScales[m] = d3.scaleLinear()
             .domain(d3.extent(graphData, d => (d[m])))
@@ -165,7 +157,7 @@ export default function () {
           .duration(TR_TIME)
           .call(d3.axisBottom(xScale))
           */
-        d3.selectAll('parallelCoordinates_yAxisContainer')
+        d3.selectAll('.parallelCoordinates_yAxisContainer')
           .each(function (d) {
             if (d === 'AvgLaptime') {
               d3.select(this).transition()
@@ -174,6 +166,7 @@ export default function () {
               d3.select(this).transition()
                 .duration(TR_TIME).call(d3.axisLeft().scale(yScales[d]))
             }
+            d3.select(this).attr('transform', d => `translate(${dimensions.margin.left + xScale((d))}, ${dimensions.margin.top})`)
           })
         dataJoin()
       }
@@ -262,6 +255,21 @@ export default function () {
 
     bounds = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+
+    const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']
+
+    svg.selectAll('yAxis')
+      .data(metrics)
+      .enter()
+      .append('g')
+      .classed('parallelCoordinates_yAxisContainer', true)
+      .attr('transform', (d, i) => `translate(${dimensions.margin.left + (i * 20) * dimensions.width / 100}, ${dimensions.margin.top})`)
+      .append('text')
+      .style('text-anchor', 'middle')
+      .attr('y', -9)
+      .text(d => d)
+      .style('fill', 'white')
+      .style('font-size', 12)
   }
 
   //
