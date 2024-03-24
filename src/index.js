@@ -93,25 +93,25 @@ async function updateData () {
     console.log('Starting data update for round:', round)
 
     // Results.csv
-    const results = await d3.csv(`/${round}/results.csv`)
+    const results = await d3.csv(`data/${round}/results.csv`)
     results.forEach(driver => {
       controller.handleAddDriver(driver)
     })
 
     // Laps.csv
-    const lapsData = await d3.csv(`/${round}/laps.csv`, d3.autoType)
+    const lapsData = await d3.csv(`data/${round}/laps.csv`, d3.autoType)
     lapsData.forEach(lap => {
       controller.handleAddLap(formatLap(lap))
     })
 
     // Pitstops.csv
-    const pitStops = await d3.csv(`/${round}/pitstops.csv`)
+    const pitStops = await d3.csv(`data/${round}/pitstops.csv`)
     pitStops.forEach(pitStop => {
       controller.handleAddPitStop(formatPitStop(pitStop))
     })
 
     // PCA.csv
-    const pca = await d3.csv(`/${round}/PCA.csv`)
+    const pca = await d3.csv(`data/${round}/PCA.csv`)
     pca.forEach(row => {
       controller.handleAddRow(row)
     })

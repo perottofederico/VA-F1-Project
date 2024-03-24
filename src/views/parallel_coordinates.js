@@ -52,7 +52,8 @@ export default function () {
         // The telemetry of each car is saved in a file named based on the driver's number
         // This is because originally the data is in a dictionary of dataframes, where the driver's number is the key
         const driverNumber = d[0].driverNumber
-        telemetryPromises.push(d3.csv(`./telemetry/${driverNumber}_telemetry.csv`, d3.autoType).then(telemetryData => {
+        const round = d3.select('.selection').node().value
+        telemetryPromises.push(d3.csv(`./data/${round}/${driverNumber}_telemetry.csv`, d3.autoType).then(telemetryData => {
           return telemetry.computeMetrics(telemetryData, Date.parse(d[0].lapStartDate))
         }))
 
