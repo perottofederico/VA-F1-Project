@@ -119,7 +119,7 @@ class Laps {
           sumOfSquares += (this.laptimeToMilliseconds(lap.lapTime) - (avgLaptime)) ** 2
         }
       })
-      const stdDev = Math.sqrt(sumOfSquares / ignoredLaps)
+      const stdDev = Math.sqrt(sumOfSquares / (ignoredLaps + 1)) // to avoid dividing by zero lol
       laptimeConsistency = Math.round((stdDev / avgLaptime * 100) * 1000) / 1000 // toFixed(3) converts it to a string but maybe its fine?
     }
 
@@ -157,7 +157,6 @@ class Laps {
     const graphData = []
     groupedLaps.forEach(driverlaps => {
       const stints = d3.group(driverlaps, d => d.stint)
-
       let lapOfPitstop = 0
       stints.forEach(stint => {
         graphData.push({

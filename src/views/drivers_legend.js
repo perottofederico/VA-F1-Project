@@ -53,7 +53,7 @@ export default function () {
 
       function dataJoin () {
         bounds.selectAll('text')
-          .data(d3.sort(data.data, d => d.TeamName))
+          .data(d3.sort(data.data, d => d.TeamName), d => d.Abbreviation)
           .join(enterDrivers, updateDrivers, exitDrivers)
       }
       dataJoin()
@@ -92,6 +92,7 @@ export default function () {
               // return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
               return (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top
             })
+            .text(function (d) { return d.Abbreviation })
           )
       }
 

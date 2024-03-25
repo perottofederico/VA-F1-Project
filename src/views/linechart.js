@@ -70,7 +70,6 @@ export default function () {
     d3.selectAll('circle')
       .filter((d, i) => d.driver !== e.target.id)
       .attr('opacity', 0.4)
-    console.log(e.target.id)
   }
   function onLineLeave (e, d) {
     d3.select('g').selectAll('path')
@@ -94,7 +93,7 @@ export default function () {
       const yScale = d3.scaleLinear()
         // .domain([0, 12000])
         .domain(d3.extent(data.data, yAccessor))
-        .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
+        .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
 
       //
       xAxisContainer.call(d3.axisBottom(xScale))
@@ -105,21 +104,8 @@ export default function () {
         const groupedData = d3.group(data.data, d => d.driver)
         // Add rectangles to represent track status
         bounds.selectAll('rect')
-          .data(groupedData.get(winner).filter(lap => lap.trackStatus !== 1)) // i'm passing the first driver, but should make sure i pass the winner so all laps are considered
+          .data(groupedData.get(winner).filter(lap => lap.trackStatus !== 1))
           .join(enterTrackStatus, updateTrackStatus, exitTrackStatus)
-
-        // Add lines to represent deltas
-        bounds.selectAll('path')
-          .data(groupedData.values(), d => d[0].driver)
-          .join(enterFn, updateFn, exitFn)
-
-        // Add the dots on top of the linechart
-        // I changed the data binding because it's easier this way
-        // but i wonder if there's a way to chain the scatter and line plot
-        bounds.selectAll('circle')
-          .data(data.data)
-          .join(enterCircleFn, updateCircleFn, exitCircleFn)
-
         // Add grid lines to the chart
         // I tried to do this differently (not enter-update-exit first &
         // using only one set of functions later) but i couldnt do it,
@@ -132,6 +118,18 @@ export default function () {
         yGridContainer.selectAll('.y-grid-lines')
           .data(yScale.ticks())
           .join(enterYGrid, updateYGrid, exitYGrid)
+
+        // Add lines to represent deltas
+        bounds.selectAll('path')
+          .data(groupedData.values(), d => d[0].driver)
+          .join(enterFn, updateFn, exitFn)
+
+        // Add the dots on top of the linechart
+        // I changed the data binding because it's easier this way
+        // but i wonder if there's a way to chain the scatter and line plot
+        bounds.selectAll('circle')
+          .data(data.data, d => d.driver)
+          .join(enterCircleFn, updateCircleFn, exitCircleFn)
       }
       dataJoin()
 
@@ -222,7 +220,6 @@ export default function () {
           .on('mousemove', (e, d) => onMouseMove(e, d))
           .on('mouseleave', (e, d) => onCircleLeave(e, d))
       }
-
       function updateCircleFn (sel) {
         return sel
           .call(update => update.transition().duration(TR_TIME)
@@ -231,6 +228,7 @@ export default function () {
             .attr('r', dimensions.width / 360)
             .attr('stroke', d => getTeamColor(d.team))
             .attr('fill', d => getTeamColor(d.team))
+            .style('position', 'absolute')
           )
       }
       function exitCircleFn (sel) {
@@ -309,7 +307,7 @@ export default function () {
       }
 
       updateHeight = function () {
-        yScale.range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
+        yScale.range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
         svg
           .attr('height', dimensions.height)
         xAxisContainer

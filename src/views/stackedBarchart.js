@@ -55,7 +55,7 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('rect')
-          .data(graphData)
+          .data(graphData, d => d.driver)
           .join(enterRect, updateRect, exitRect)
       }
       dataJoin()
@@ -73,8 +73,14 @@ export default function () {
             if (d.compound === 'MEDIUM') {
               return 'yellow'
             }
+            if (d.compound === 'INTERMEDIATE') {
+              return 'green'
+            }
+            if (d.compound === 'WET') return 'blue'
             return 'white'
           })
+          .style('stroke', 'black')
+          .style('stroke-width', 2)
       }
       function updateRect (sel) {
         return sel
@@ -83,6 +89,22 @@ export default function () {
             .attr('y', d => yScale(d.driver))
             .attr('height', yScale.bandwidth())
             .attr('width', d => xScale(d.length))
+            .attr('id', d => d.driver)
+            .attr('fill', d => {
+              if (d.compound === 'SOFT') {
+                return 'red'
+              }
+              if (d.compound === 'MEDIUM') {
+                return 'yellow'
+              }
+              if (d.compound === 'INTERMEDIATE') {
+                return 'green'
+              }
+              if (d.compound === 'WET') return 'blue'
+              return 'white'
+            })
+            .style('stroke', 'black')
+            .style('stroke-width', 2)
           )
       }
       function exitRect (sel) {

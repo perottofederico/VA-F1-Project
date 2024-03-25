@@ -58,8 +58,6 @@ export default function () {
           // .attr('stroke-width', 2)
           .attr('fill', d => getTeamColor(d.Team))
           .attr('id', d => d.Driver)
-          .append('text')
-          .text('CAPYBARA')
       }
       function updateCircleFn (sel) {
         return sel

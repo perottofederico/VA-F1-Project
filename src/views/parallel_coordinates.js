@@ -116,7 +116,7 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('path')
-          .data(graphData)
+          .data(graphData, d => d.driver)
           .join(enterLine, updateLine, exitLine)
       }
       function enterLine (sel) {
