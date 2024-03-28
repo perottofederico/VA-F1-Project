@@ -1,12 +1,10 @@
 import * as d3 from 'd3'
-import { getTeamColor } from '../utils'
-
-const TR_TIME = 500
+import { getTeamColor, TR_TIME } from '../utils'
 
 export default function () {
   let data = []
   const xAccessor = d => parseFloat(d.PC1)// for some reason PC1 and PC2 are treated as strings, so i need to parse them.
-  const yAccessor = d => parseFloat(d.PC2)
+  const yAccessor = d => parseFloat(d.PC2) // should move this conversion to a model file maybe
   let updateData
   let updateWidth
   let updateHeight
@@ -43,7 +41,7 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('circle')
-          .data(data.data, d => d.Driver)
+          .data(data.data)
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
       }
       dataJoin()
@@ -67,10 +65,14 @@ export default function () {
             .attr('r', dimensions.width / 360)
             .attr('stroke', d => getTeamColor(d.Team))
             .attr('fill', d => getTeamColor(d.Team))
+            .attr('id', d => d.Driver)
           )
       }
       function exitCircleFn (sel) {
-        return sel.call(exit => exit.remove())
+        return sel.call(exit => exit
+          .transition().duration(TR_TIME)
+          .attr('opacity', 0)
+          .remove())
       }
 
       // Atm it's not being used but could be useful so i'm keeping it

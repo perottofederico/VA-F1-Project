@@ -1,7 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor, isSecondDriver } from '../utils'
-
-const TR_TIME = 500
+import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
 
 export default function () {
   let data = []
@@ -96,8 +94,12 @@ export default function () {
         .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
 
       //
-      xAxisContainer.call(d3.axisBottom(xScale))
-      yAxisContainer.call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+      xAxisContainer
+      // .transition().duration(TR_TIME)
+        .call(d3.axisBottom(xScale))
+      yAxisContainer
+        // .transition().duration(TR_TIME)
+        .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
 
       //
       function dataJoin () {
@@ -128,7 +130,7 @@ export default function () {
         // I changed the data binding because it's easier this way
         // but i wonder if there's a way to chain the scatter and line plot
         bounds.selectAll('circle')
-          .data(data.data, d => d.driver)
+          .data(data.data) // removing the binding key actually binds each svg element to each datum,which is what i want
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
       }
       dataJoin()
@@ -165,7 +167,9 @@ export default function () {
           )
       }
       function exitTrackStatus (sel) {
-        return sel.call(exit => exit.remove())
+        return sel.call(exit => exit.transition().duration(TR_TIME)
+          .style('opacity', 0)
+          .remove())
       }
 
       //
@@ -216,6 +220,7 @@ export default function () {
           .attr('stroke-width', 2)
           .attr('fill', d => getTeamColor(d.team))
           .attr('id', d => d.driver)
+          .style('z-index', 10)
           .on('mouseenter', (e, d) => onCircleEnter(e, d))
           .on('mousemove', (e, d) => onMouseMove(e, d))
           .on('mouseleave', (e, d) => onCircleLeave(e, d))
@@ -225,10 +230,10 @@ export default function () {
           .call(update => update.transition().duration(TR_TIME)
             .attr('cx', d => xScale(d.lapNumber))
             .attr('cy', d => yScale(d.delta))
-            .attr('r', dimensions.width / 360)
+            // .attr('r', dimensions.width / 360)
             .attr('stroke', d => getTeamColor(d.team))
             .attr('fill', d => getTeamColor(d.team))
-            .style('position', 'absolute')
+            .attr('id', d => d.driver)
           )
       }
       function exitCircleFn (sel) {
@@ -282,6 +287,7 @@ export default function () {
       updateData = function () {
         xScale.domain(d3.extent(data.data, xAccessor))
         yScale.domain(d3.extent(data.data, yAccessor))
+        console.log(d3.extent(data.data, yAccessor))
         xAxisContainer
           .transition()
           .duration(TR_TIME)

@@ -1,7 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor } from '../utils'
-
-const TR_TIME = 500
+import { getTeamColor, TR_TIME } from '../utils'
 
 export default function () {
   let data = []

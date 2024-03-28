@@ -1,7 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor } from '../utils'
-
-const TR_TIME = 500
+import { getTeamColor, TR_TIME } from '../utils'
 
 export default function () {
   let laps = []
@@ -55,7 +53,7 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('rect')
-          .data(graphData, d => d.driver)
+          .data(graphData)
           .join(enterRect, updateRect, exitRect)
       }
       dataJoin()
@@ -109,8 +107,10 @@ export default function () {
       }
       function exitRect (sel) {
         sel.call(exit => exit
-          // .transition()
-          // .duration(TR_TIME)
+          .transition()
+          .duration(TR_TIME)
+          .attr('width', 0)
+          .style('opacity', 0)
           .remove()
         )
       }

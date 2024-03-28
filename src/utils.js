@@ -1,5 +1,7 @@
 import * as d3 from 'd3'
 
+export const TR_TIME = 500
+
 export function sentenceString (s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 }

@@ -1,7 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor, isSecondDriver } from '../utils'
-
-const TR_TIME = 500
+import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
 
 export default function () {
   let laps = []

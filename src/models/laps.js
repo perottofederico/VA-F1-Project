@@ -36,11 +36,9 @@ class Laps {
     groupedLaps.forEach(driver => {
       // console.log(driver)
       driver.forEach(lap => {
-        // console.log(lap)
         // get same lap number and its laptime from the winner
         const winnerLap = groupedLaps.get(winner).find(winnerLap => winnerLap.lapNumber === lap.lapNumber)
         const delta = Date.parse(lap.lapStartDate) - Date.parse(winnerLap.lapStartDate)
-        // console.log(delta)
         lap.delta = delta
       })
     })
