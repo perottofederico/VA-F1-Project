@@ -10,31 +10,20 @@ class Laps {
     //
     // Some laps are missing the lapTime
     // this can be due to multiple reasons(red flags, crashes, retirements, pit stops)
-    // in the case of pitstops, it is useful to compute them separately
-    // in the case of red flags and DNFs we can tell the application to ignore them
-    /*
-    if (lap.lapTime === null) {
-      // Red flag
-      if (lap.trackStatus % 5) {
-        // handle red flag
-      }
-      // Entered the pit lane
-      if (lap.pitInTime) {
-        // handle pitstop lap
-      }
+    // in the case of pitstops, it may be useful to compute them separately.
+
+    // In the case of red flags and DNFs we can tell the application to ignore those laps
+    if (isNaN(lap.lapStartDate)) {
+      this.data.push(lap)
     }
-    */
-    this.data.push(lap)
     // this.onLapsListChanged()
   }
 
   computeDeltas (groupedLaps) {
-    // console.log([...data])
-    // FIX this, need to know the real winner (even though its most likely VER lol)
-    // For now assume winner is VER
+    // Find the winner
+    // Drivers from results.csv are sorted by finishing order
     const winner = drivers.data[0].Abbreviation
     groupedLaps.forEach(driver => {
-      // console.log(driver)
       driver.forEach(lap => {
         // get same lap number and its laptime from the winner
         const winnerLap = groupedLaps.get(winner).find(winnerLap => winnerLap.lapNumber === lap.lapNumber)
@@ -45,15 +34,10 @@ class Laps {
   }
 
   // Different approach to computing deltas
+  // In this function, the delta is computed with respect to the driver currently in the lead
   computeDeltas_2 (laps) {
-    //
-    // Find the winner
-    // Drivers from results.csv are sorted by finishing order
-    const winner = drivers.data[0].Abbreviation
-    console.log('need to use this winner stuff to make the other function usable' + winner)
     // group the laps by lap number
     const groupedLaps = d3.group(laps.data, d => d.lapNumber)
-    // console.log(groupedLaps)
     // For each lap find its leader in the race
     groupedLaps.forEach(laps => {
       const leader = laps.find(leader => leader.position === 1)

@@ -94,7 +94,14 @@ export default function () {
       xAxisContainer.call(d3.axisBottom(xScale)).style('font-size', 12)
       */
 
-      // Update the y axis
+      // Create brush behaviour
+      const selections = new Map()
+      const brush = d3.brushY()
+        // maybe add a little extra on the height for clarity
+        .extent([[-20, 0], [20, dimensions.height - 2 * dimensions.margin.bottom]]) // not sure why 2*bottom
+        .on('start brush end', brushed)
+
+      // Update the y axes
       svg.selectAll('.parallelCoordinates_yAxisContainer')
         .data(metrics)
         .attr('transform', d => `translate(${dimensions.margin.left + xScale((d))}, ${dimensions.margin.top})`)
@@ -104,7 +111,27 @@ export default function () {
           } else {
             d3.select(this).call(d3.axisLeft().scale(yScales[d]))
           }
+          // Add brushing to axes
+          d3.select(this).call(brush)
         })
+
+      function brushed ({ selection }, key) {
+        // if (selection === null) selections.delete(key)
+        console.log(selection)
+        console.log(key)
+        if (selection === null) selections.delete(key)
+        else selections.set(key, selection.map(x.get(key).invert))
+        const selected = []
+        bounds.selectAll('path').each(function (d) {
+          const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max)
+          d3.select(this).style('stroke', active ? color(d[keyz]) : deselectedColor)
+          if (active) {
+            d3.select(this).raise()
+            selected.push(d)
+          }
+        })
+        svg.property('value', selected).dispatch('input')
+      }
 
       //
       const line = d3.line()
@@ -148,6 +175,7 @@ export default function () {
         metrics.forEach(m => {
           yScales[m] = d3.scaleLinear()
             .domain(d3.extent(graphData, d => (d[m])))
+            .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
         })
         /*
         xAxisContainer

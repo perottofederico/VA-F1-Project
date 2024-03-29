@@ -76,7 +76,7 @@ export default function () {
       .attr('opacity', 1)
   }
 
-  //
+  // There's for sure a better way to do this (and the other views)
   function linechart (selection) {
     selection.each(function () {
       // Group the data based on the driver
@@ -89,16 +89,14 @@ export default function () {
         .domain(d3.extent(data.data, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
       const yScale = d3.scaleLinear()
-        // .domain([0, 12000])
         .domain(d3.extent(data.data, yAccessor))
         .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
-
       //
       xAxisContainer
       // .transition().duration(TR_TIME)
         .call(d3.axisBottom(xScale))
       yAxisContainer
-        // .transition().duration(TR_TIME)
+        .transition().duration(TR_TIME)
         .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
 
       //
@@ -108,6 +106,7 @@ export default function () {
         bounds.selectAll('rect')
           .data(groupedData.get(winner).filter(lap => lap.trackStatus !== 1))
           .join(enterTrackStatus, updateTrackStatus, exitTrackStatus)
+
         // Add grid lines to the chart
         // I tried to do this differently (not enter-update-exit first &
         // using only one set of functions later) but i couldnt do it,
@@ -135,7 +134,7 @@ export default function () {
       }
       dataJoin()
 
-      //
+      // Rectangles to represent the track status
       function enterTrackStatus (sel) {
         return sel.append('rect')
           .attr('x', d => xScale(d.lapNumber))
@@ -172,7 +171,50 @@ export default function () {
           .remove())
       }
 
-      //
+      // horizontal grid lines
+      function enterXGrid (sel) {
+        return sel.append('line')
+          .attr('class', 'x-grid-lines')
+          .attr('x1', d => xScale(d))
+          .attr('x2', d => xScale(d))
+          .attr('y1', 0)
+          .attr('y2', dimensions.height - dimensions.margin.top - dimensions.margin.bottom)
+      }
+      function updateXGrid (sel) {
+        return sel
+          .call(update => update.transition().duration(TR_TIME)
+            .attr('x1', d => xScale(d))
+            .attr('x2', d => xScale(d))
+            .attr('y1', 0)
+            .attr('y2', dimensions.height - dimensions.margin.top - dimensions.margin.bottom)
+          )
+      }
+      function exitXGrid (sel) {
+        return sel.call(exit => exit.remove())
+      }
+      // vertical grid lines
+      function enterYGrid (sel) {
+        return sel.append('line')
+          .attr('class', 'y-grid-lines')
+          .attr('x1', 0)
+          .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+          .attr('y1', d => yScale(d))
+          .attr('y2', d => yScale(d))
+      }
+      function updateYGrid (sel) {
+        return sel
+          .call(update => update.transition().duration(TR_TIME)
+            .attr('x1', 0)
+            .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+            .attr('y1', d => yScale(d))
+            .attr('y2', d => yScale(d))
+          )
+      }
+      function exitYGrid (sel) {
+        return sel.call(exit => exit.remove())
+      }
+
+      // lines
       function enterFn (sel) {
         return sel.append('path')
           .attr('fill', 'none')
@@ -210,17 +252,17 @@ export default function () {
         )
       }
 
-      //
+      // circles
       function enterCircleFn (sel) {
+        console.log(sel.data())
         return sel.append('circle')
           .attr('cx', d => xScale(d.lapNumber))
-          .attr('cy', d => yScale(d.delta))
+          .attr('cy', d => isNaN(d.delta) ? console.log(d.delta) : yScale(d.delta))
           .attr('r', dimensions.width / 360) // maybe change this ratio
           .attr('stroke', d => getTeamColor(d.team))
           .attr('stroke-width', 2)
           .attr('fill', d => getTeamColor(d.team))
           .attr('id', d => d.driver)
-          .style('z-index', 10)
           .on('mouseenter', (e, d) => onCircleEnter(e, d))
           .on('mousemove', (e, d) => onMouseMove(e, d))
           .on('mouseleave', (e, d) => onCircleLeave(e, d))
@@ -240,54 +282,10 @@ export default function () {
         return sel.call(exit => exit.remove())
       }
 
-      // linechart_xGridContainer
-      function enterXGrid (sel) {
-        return sel.append('line')
-          .attr('class', 'x-grid-lines')
-          .attr('x1', d => xScale(d))
-          .attr('x2', d => xScale(d))
-          .attr('y1', 0)
-          .attr('y2', dimensions.height - dimensions.margin.top - dimensions.margin.bottom)
-      }
-      function updateXGrid (sel) {
-        return sel
-          .call(update => update.transition().duration(TR_TIME)
-            .attr('x1', d => xScale(d))
-            .attr('x2', d => xScale(d))
-            .attr('y1', 0)
-            .attr('y2', dimensions.height - dimensions.margin.top - dimensions.margin.bottom)
-          )
-      }
-      function exitXGrid (sel) {
-        return sel.call(exit => exit.remove())
-      }
-
-      function enterYGrid (sel) {
-        return sel.append('line')
-          .attr('class', 'y-grid-lines')
-          .attr('x1', 0)
-          .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
-          .attr('y1', d => yScale(d))
-          .attr('y2', d => yScale(d))
-      }
-      function updateYGrid (sel) {
-        return sel
-          .call(update => update.transition().duration(TR_TIME)
-            .attr('x1', 0)
-            .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
-            .attr('y1', d => yScale(d))
-            .attr('y2', d => yScale(d))
-          )
-      }
-      function exitYGrid (sel) {
-        return sel.call(exit => exit.remove())
-      }
-
       //
       updateData = function () {
         xScale.domain(d3.extent(data.data, xAccessor))
         yScale.domain(d3.extent(data.data, yAccessor))
-        console.log(d3.extent(data.data, yAccessor))
         xAxisContainer
           .transition()
           .duration(TR_TIME)
