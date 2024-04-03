@@ -98,7 +98,7 @@ export default function () {
       const selections = new Map()
       const brush = d3.brushY()
         // maybe add a little extra on the height for clarity
-        .extent([[-20, 0], [20, dimensions.height - 2 * dimensions.margin.bottom]]) // not sure why 2*bottom
+        .extent([[-20, -5], [20, dimensions.height - 2 * dimensions.margin.bottom]]) // not sure why 2*bottom
         .on('start brush end', brushed)
 
       // Update the y axes
@@ -115,33 +115,16 @@ export default function () {
           d3.select(this).call(brush)
         })
 
-      function brushed ({ selection }, key) {
-        // if (selection === null) selections.delete(key)
-        console.log(selection)
-        console.log(key)
-        if (selection === null) selections.delete(key)
-        else selections.set(key, selection.map(x.get(key).invert))
-        const selected = []
-        bounds.selectAll('path').each(function (d) {
-          const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max)
-          d3.select(this).style('stroke', active ? color(d[keyz]) : deselectedColor)
-          if (active) {
-            d3.select(this).raise()
-            selected.push(d)
-          }
-        })
-        svg.property('value', selected).dispatch('input')
-      }
-
       //
       const line = d3.line()
         .x(([metric]) => xScale(metric))
         .y(([metric, value]) => yScales[metric](value))
 
       //
+      console.log(graphData)
       function dataJoin () {
         bounds.selectAll('path')
-          .data(graphData, d => d.driver)
+          .data(graphData, d => d.team)
           .join(enterLine, updateLine, exitLine)
       }
       function enterLine (sel) {
@@ -231,6 +214,23 @@ export default function () {
             }
           })
         dataJoin()
+      }
+
+      //
+      // Brushing function
+      function brushed ({ selection }, key) {
+        if (selection === null) selections.delete(key)
+        else selections.set(key, selection.map(yScales[key].invert))
+        const selected = []
+        bounds.selectAll('path').each(function (d) {
+          const isSelected = Array.from(selections).every(([key, [max, min]]) =>
+            d[key] >= min && d[key] <= max)
+          d3.select(this).attr('stroke', isSelected ? getTeamColor(d.team) : '#b1b5b2')
+          if (isSelected) {
+            d3.select(this).raise()
+            selected.push(d)
+          }
+        })
       }
     })
   }

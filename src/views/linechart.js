@@ -91,13 +91,37 @@ export default function () {
       const yScale = d3.scaleLinear()
         .domain(d3.extent(data.data, yAccessor))
         .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
+      // I need (i think) this copy as a point of reference for the zoom behaviour
+      const yScaleCopy = yScale.copy()
+
       //
       xAxisContainer
-      // .transition().duration(TR_TIME)
+        .transition().duration(TR_TIME)
         .call(d3.axisBottom(xScale))
       yAxisContainer
         .transition().duration(TR_TIME)
         .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+
+      //
+      //
+      // Experiment with brush
+      /*
+      const brush = d3.brushY()
+        .extent([[0, 0], [dimensions.width - dimensions.margin.right - dimensions.margin.left, dimensions.height - dimensions.margin.bottom - dimensions.margin.top]])
+        .on('end', brushed)
+      yAxisContainer.call(brush)
+
+      function brushed ({ selection }, key) {
+        if (selection) {
+          const invertedScale = yScale.invert
+          yScale.domain([invertedScale(selection[0]), invertedScale(selection[1])])
+        }
+        yAxisContainer
+          .transition().duration(750)
+          .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+        dataJoin()
+      }
+      */
 
       //
       function dataJoin () {
@@ -254,7 +278,6 @@ export default function () {
 
       // circles
       function enterCircleFn (sel) {
-        console.log(sel.data())
         return sel.append('circle')
           .attr('cx', d => xScale(d.lapNumber))
           .attr('cy', d => isNaN(d.delta) ? console.log(d.delta) : yScale(d.delta))
@@ -266,6 +289,7 @@ export default function () {
           .on('mouseenter', (e, d) => onCircleEnter(e, d))
           .on('mousemove', (e, d) => onMouseMove(e, d))
           .on('mouseleave', (e, d) => onCircleLeave(e, d))
+          // .raise()
       }
       function updateCircleFn (sel) {
         return sel
@@ -277,10 +301,28 @@ export default function () {
             .attr('fill', d => getTeamColor(d.team))
             .attr('id', d => d.driver)
           )
+          // after updating, some circles ended up behind new elements such as rectangles
+          // this re-inserts each selected element, in order, as the last child of its parent
+          // but kinda breaks the transition :c
+          .raise()
       }
       function exitCircleFn (sel) {
         return sel.call(exit => exit.remove())
       }
+
+      const zoom = d3.zoom()
+        .extent([[0, 0], [dimensions.width, dimensions.height]])
+        .scaleExtent([1, 10])
+        .translateExtent([[0, 0], [dimensions.width, dimensions.height]])
+        .on('zoom', handleZoom)
+
+      function handleZoom (e) {
+        const y = e.transform.rescaleY(yScaleCopy)
+        yScale.domain(y.domain())
+        yAxisContainer.call(d3.axisLeft(y).tickFormat(d3.timeFormat('%M:%S.%L')))
+        dataJoin()
+      }
+      svg.call(zoom)
 
       //
       updateData = function () {
