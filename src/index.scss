@@ -36,7 +36,7 @@ body {
   .drivers_legend { 
     grid-area: legend;
     overflow:hidden;
-    max-width: 150px;
+    max-width: 250px;
   }
   .linechart { 
     grid-area: linechart_graph;
@@ -77,5 +77,5 @@ body {
 }
 
 .dashed{
-  stroke-dasharray: 5,7  ;
+  stroke-dasharray: 3, 5   ;
 }

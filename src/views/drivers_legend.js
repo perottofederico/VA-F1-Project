@@ -1,10 +1,8 @@
 import * as d3 from 'd3'
-import { getTeamColor, TR_TIME } from '../utils'
+import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
 
 export default function () {
   let data = []
-  const xAccessor = d => d.lapNumber
-  const yAccessor = d => d.delta
   let updateData
   let updateWidth
   let updateHeight
@@ -15,9 +13,9 @@ export default function () {
     height: 300,
     margin: {
       top: 5,
-      right: 60,
+      right: 70,
       bottom: 30,
-      left: 15
+      left: 10
     }
   }
 
@@ -42,81 +40,77 @@ export default function () {
 
   function drivers_legend (selection) {
     selection.each(function () {
-      const xScale = d3.scaleLinear()
-        .domain(d3.extent(data.data, xAccessor))
-        .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-      const yScale = d3.scaleLinear()
-        .domain(d3.extent(data.data, yAccessor))
-        .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
+      console.log(data)
 
       function dataJoin () {
-        bounds.selectAll('text')
-          .data(d3.sort(data.data, d => d.TeamName), d => d.Abbreviation)
-          .join(enterDrivers, updateDrivers, exitDrivers)
+        bounds.selectAll('g')
+          .data(d3.sort(data.data, d => d.TeamName))
+          .join(enterFn, updateFn, exitFn)
       }
       dataJoin()
 
-      //
-      function enterDrivers (sel) {
-        return sel.append('text')
+      function enterFn (sel) {
+        const p = sel.append('g')
           .attr('id', d => d.Abbreviation)
-          .attr('x', function (d, i) {
-            return (i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
-          })
-          .attr('y', function (d, i) {
-            // return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
-            return (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top
-          })
-          .text(function (d) { return d.Abbreviation })
-          .style('fill', function (d) {
-            return (getTeamColor(d.TeamName))
-          })
-          .style('opacity', d => d.Status !== 'Finished' ? 0.3 : 1)
-          .style('font-size', 15)
-          .style('font-weight', 700)
-          // .style('stroke-width', '0.1%')
-          // .style('stroke', 'white')
           .on('click', (e, d) => onTextClick(e, d))
           .on('mouseenter', (e, d) => onTextEnter(e, d))
           .on('mouseleave', (e, d) => onTextLeave(e, d))
-      }
-      function updateDrivers (sel) {
-        return sel
-          .call(update => update.transition().duration(TR_TIME)
-            .attr('x', function (d, i) {
-              return (i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
-            })
-            .attr('y', function (d, i) {
-              // return ((Math.floor(i / 2) * 20) + dimensions.margin.top)
-              return (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top
-            })
-            .text(function (d) { return d.Abbreviation })
-          )
-      }
 
-      function exitDrivers (sel) {
-        sel.call(exit => exit
-        // .transition()
-        // .duration(TR_TIME)
-          .remove()
+        p.append('text')
+          .attr('id', d => d.Abbreviation)
+          .attr('x', (d, i) => i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
+          .attr('y', (d, i) => (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top)
+          .text(function (d) { return d.Abbreviation })
+          .style('fill', d => getTeamColor(d.TeamName))
+          .style('opacity', d => d.Status !== 'Finished' ? 0.3 : 1)
+          .style('font-size', 15)
+          .style('font-weight', 700)
+
+        p.append('line')
+          .attr('x1', (d, i) => (i % 2 ? dimensions.width - 30 : dimensions.margin.left + 40))
+          .attr('x2', (d, i) => (i % 2 ? dimensions.width : dimensions.margin.left + 60))
+          .attr('y1', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
+          .attr('y2', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
+          .attr('stroke', d => getTeamColor(d.TeamName))
+          .attr('stroke-width', 2.5)
+          .attr('class', d => isSecondDriver(d.Abbreviation) ? 'dashed' : '')
+      }
+      function updateFn (sel) {
+        const text = sel.select('text')
+          .attr('id', d => d.Abbreviation)
+        text.call(update => update.transition().duration(TR_TIME)
+          .attr('id', d => d.Abbreviation)
+          .attr('x', (d, i) => i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
+          .attr('y', (d, i) => (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top)
+          .text(function (d) { return d.Abbreviation })
         )
+
+        const line = sel.select('line')
+        line.call(update => update.transition().duration(TR_TIME)
+          .attr('x1', (d, i) => (i % 2 ? dimensions.width - 40 : dimensions.margin.left + 40))
+          .attr('x2', (d, i) => (i % 2 ? dimensions.width - 20 : dimensions.margin.left + 60))
+          .attr('y1', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
+          .attr('y2', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
+          .attr('stroke', d => getTeamColor(d.TeamName))
+        )
+      }
+      function exitFn (sel) {
+        const text = sel.select('text')
+        text.call(exit => exit.remove())
+
+        const line = sel.select('line')
+        line.call(exit => exit.remove())
       }
 
       updateData = function () {
-        xScale.domain(d3.extent(data.data, xAccessor))
-        // xScale.domain(d3.extent(data.lapsCount))
-        yScale.domain(d3.extent(data.data, yAccessor))
-        // yScale.domain(d3.extent(data.lapTimesMs))
         dataJoin()
       }
       updateWidth = function () {
-        xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
         svg
-          .attr('width', dimensions.width < 150 ? dimensions.width : 150)
+          .attr('width', dimensions.width < 250 ? dimensions.width : 250)
         dataJoin()
       }
       updateHeight = function () {
-        yScale.range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
         svg
           .attr('height', dimensions.height)
         dataJoin()

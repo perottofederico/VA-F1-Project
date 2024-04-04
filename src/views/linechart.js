@@ -20,7 +20,7 @@ export default function () {
     height: 400,
     margin: {
       top: 50,
-      right: 20,
+      right: 80,
       bottom: 30,
       left: 80
     }
@@ -101,27 +101,6 @@ export default function () {
       yAxisContainer
         .transition().duration(TR_TIME)
         .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
-
-      //
-      //
-      // Experiment with brush
-      /*
-      const brush = d3.brushY()
-        .extent([[0, 0], [dimensions.width - dimensions.margin.right - dimensions.margin.left, dimensions.height - dimensions.margin.bottom - dimensions.margin.top]])
-        .on('end', brushed)
-      yAxisContainer.call(brush)
-
-      function brushed ({ selection }, key) {
-        if (selection) {
-          const invertedScale = yScale.invert
-          yScale.domain([invertedScale(selection[0]), invertedScale(selection[1])])
-        }
-        yAxisContainer
-          .transition().duration(750)
-          .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
-        dataJoin()
-      }
-      */
 
       //
       function dataJoin () {

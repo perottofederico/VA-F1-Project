@@ -144,6 +144,7 @@ class Laps {
         graphData.push({
           driver: stint[0].driver,
           team: stint[0].team,
+          stint: stint[0].stint,
           compound: stint[0].compound,
           length: stint.length,
           lap: lapOfPitstop

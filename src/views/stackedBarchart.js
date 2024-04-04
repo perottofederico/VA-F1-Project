@@ -21,6 +21,33 @@ export default function () {
       left: 80
     }
   }
+  function mouseover (event, d) {
+    d3.select('#root')
+      .append('div')
+      .attr('class', 'tooltip')
+      .html('Stint ' + d.stint + '<br> Laps: ' +
+      d.lap + ' to ' + (d.lap + d.length) +
+      '<br> Compound: ' + d.compound)
+
+    // Highlight corresponding laps in linechart
+    d3.select('.linechart_container').select('.linechart').selectAll('circle')
+      .style('opacity', datum => {
+        if (datum.driver === d.driver) {
+          if (datum.lapNumber <= (d.lap + d.length) && datum.lapNumber >= d.lap) {
+            return 1
+          }
+        }
+        return 0.2
+      })
+  }
+  function mouseleave (event, d) {
+    d3.selectAll('.tooltip').remove()
+  }
+  function mousemove (event, d) {
+    d3.select('.tooltip')
+      .style('left', event.x + 'px')
+      .style('top', event.y - 65 + 'px')
+  }
 
   function stackedBarchart (selection) {
     selection.each(function () {
@@ -57,6 +84,7 @@ export default function () {
           .join(enterRect, updateRect, exitRect)
       }
       dataJoin()
+
       function enterRect (sel) {
         return sel.append('rect')
           .attr('x', d => xScale(d.lap))
@@ -64,6 +92,7 @@ export default function () {
           .attr('height', yScale.bandwidth())
           .attr('width', d => xScale(d.length))
           .attr('id', d => d.driver)
+          // move this to utils?
           .attr('fill', d => {
             if (d.compound === 'SOFT') {
               return 'red'
@@ -79,6 +108,9 @@ export default function () {
           })
           .style('stroke', 'black')
           .style('stroke-width', 2)
+          .on('mouseover', mouseover)
+          .on('mouseleave', mouseleave)
+          .on('mousemove', mousemove)
       }
       function updateRect (sel) {
         return sel
@@ -115,7 +147,6 @@ export default function () {
         )
       }
 
-      //
       updateData = function () {
         xScale.domain([0, groupedLaps.get(drivers.data[0].Abbreviation).length])
         yScale.domain(d3.map(d3.sort(drivers.data, d => d.TeamName), d => d.Abbreviation))

@@ -121,7 +121,6 @@ export default function () {
         .y(([metric, value]) => yScales[metric](value))
 
       //
-      console.log(graphData)
       function dataJoin () {
         bounds.selectAll('path')
           .data(graphData, d => d.team)
