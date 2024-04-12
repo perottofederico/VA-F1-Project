@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor, TR_TIME } from '../utils'
+import { compoundToColor, getTeamColor, TR_TIME } from '../utils'
 
 export default function () {
   let laps = []
@@ -9,16 +9,17 @@ export default function () {
   let updateHeight
   let svg
   let bounds
+  let title
   let xAxisContainer
   let yAxisContainer
   const dimensions = {
     width: 800,
     height: 400,
     margin: {
-      top: 50,
+      top: 70,
       right: 20,
       bottom: 30,
-      left: 80
+      left: 50
     }
   }
   function mouseover (event, d) {
@@ -42,6 +43,8 @@ export default function () {
   }
   function mouseleave (event, d) {
     d3.selectAll('.tooltip').remove()
+    d3.select('.linechart_container').select('.linechart').selectAll('circle')
+      .style('opacity', 1)
   }
   function mousemove (event, d) {
     d3.select('.tooltip')
@@ -68,7 +71,7 @@ export default function () {
         .padding(0.3)
 
       //
-      xAxisContainer.call(d3.axisBottom(xScale))
+      xAxisContainer.call(d3.axisBottom(xScale).tickValues(xScale.ticks().concat(xScale.domain())))
       yAxisContainer.call(d3.axisLeft(yScale))
 
       // Color y axis labels
@@ -82,9 +85,14 @@ export default function () {
         bounds.selectAll('rect')
           .data(graphData)
           .join(enterRect, updateRect, exitRect)
+
+        svg.selectAll('g.legend')
+          .data(d3.sort([...new Set(graphData.map(stint => stint.compound).sort())], d => d.length), d => d)
+          .join(enterLegend, updateLegend, exitLegend)
       }
       dataJoin()
 
+      //
       function enterRect (sel) {
         return sel.append('rect')
           .attr('x', d => xScale(d.lap))
@@ -93,20 +101,8 @@ export default function () {
           .attr('width', d => xScale(d.length))
           .attr('id', d => d.driver)
           // move this to utils?
-          .attr('fill', d => {
-            if (d.compound === 'SOFT') {
-              return 'red'
-            }
-            if (d.compound === 'MEDIUM') {
-              return 'yellow'
-            }
-            if (d.compound === 'INTERMEDIATE') {
-              return 'green'
-            }
-            if (d.compound === 'WET') return 'blue'
-            return 'white'
-          })
-          .style('stroke', 'black')
+          .attr('fill', d => compoundToColor(d.compound))
+          .style('stroke', '#282828')
           .style('stroke-width', 2)
           .on('mouseover', mouseover)
           .on('mouseleave', mouseleave)
@@ -133,7 +129,7 @@ export default function () {
               if (d.compound === 'WET') return 'blue'
               return 'white'
             })
-            .style('stroke', 'black')
+            .style('stroke', '#282828')
             .style('stroke-width', 2)
           )
       }
@@ -147,6 +143,44 @@ export default function () {
         )
       }
 
+      //
+      function enterLegend (sel) {
+        const g = sel.append('g')
+          .attr('class', 'legend')
+          .attr('id', d => d)
+        g.append('rect')
+          .attr('x', (_d, i) => dimensions.margin.left + 90 * i)
+          .attr('y', 45)
+          .attr('width', 20)
+          .attr('height', yScale.bandwidth())
+          .style('opacity', 1)
+          .style('fill', d => compoundToColor(d))
+        g.append('text')
+          .attr('x', (_d, i) => dimensions.margin.left + 90 * i + 25)
+          .attr('y', 55)
+          .text(d => '= ' + d)
+          .style('fill', 'white')
+          .style('font-size', 12)
+      }
+      function updateLegend (sel) {
+        sel.attr('id', d => d)
+        const rect = sel.select('rect')
+        rect.call(update => update.transition().duration(TR_TIME)
+          .attr('x', (_d, i) => dimensions.margin.left + 90 * i)
+          .attr('y', 45)
+          .style('fill', d => compoundToColor(d))
+        )
+        const text = sel.select('text')
+        text.call(update => update.transition().duration(TR_TIME)
+          .attr('x', (_d, i) => dimensions.margin.left + 90 * i + 25)
+          .attr('y', 55)
+        )
+      }
+      function exitLegend (sel) {
+        sel.call(exit => exit.remove())
+      }
+
+      //
       updateData = function () {
         xScale.domain([0, groupedLaps.get(drivers.data[0].Abbreviation).length])
         yScale.domain(d3.map(d3.sort(drivers.data, d => d.TeamName), d => d.Abbreviation))
@@ -164,6 +198,8 @@ export default function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
         svg
           .attr('width', dimensions.width)
+        title.transition().duration(TR_TIME)
+          .attr('x', dimensions.width / 2)
 
         xAxisContainer
           .transition()
@@ -220,6 +256,15 @@ export default function () {
       .attr('height', dimensions.height)
     bounds = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+    title = svg.append('text')
+      .text('Tyre Strategies')
+      .attr('x', dimensions.width / 2)
+      .attr('y', 25)
+    // move these to scss
+      .attr('font-size', '20px')
+      .attr('fill', 'white')
+      .style('text-anchor', 'middle')
+
     xAxisContainer = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
       .classed('stacked_barchart_xAxisContainer', true)

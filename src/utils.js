@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 
-export const TR_TIME = 500
+export const TR_TIME = 750
 
 export function sentenceString (s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
@@ -69,4 +69,43 @@ export function isSecondDriver (abbreviation) {
     'PIA', 'RUS', 'PER', 'SAR']
   if (secondDrivers.includes(abbreviation)) return true
   else return false
+}
+
+export function trackStatusToColor (trackStatus) {
+  switch (trackStatus % 10) {
+    case 2: return d3.schemeSet1[5] // yellow for yellow flag
+    case 4: return d3.schemeSet1[4] // orange for safety car
+    case 5: return d3.schemeSet1[0] // red for red flag
+    case 6: return 'white' // white for VSC
+    case 7: return 'white' // white for VSC (ending)
+      // This cases aren't considered, but could be done using a gradient
+    case 24: return d3.schemeSet1[4]
+    case 25: return d3.schemeSet1[0]
+    case 45: return d3.schemeSet1[0]
+    case 67: return 'white'
+  }
+}
+export function trackStatusToString (trackStatus) {
+  switch (trackStatus % 10) {
+    case 2: return 'Yellow Flag' // yellow for yellow flag
+    case 4: return 'Safety Car' // orange for safety car
+    case 5: return 'Red Flag' // red for red flag
+    case 6: return 'VSC' // white for VSC
+    case 7: return 'VSC' // white for VSC (ending)
+    // This cases aren't considered, but could be done using a gradient
+    case 24: return d3.schemeSet1[4]
+    case 25: return d3.schemeSet1[0]
+    case 45: return d3.schemeSet1[0]
+    case 67: return 'white'
+  }
+}
+
+export function compoundToColor (compound) {
+  switch (compound) {
+    case 'SOFT': return 'red'
+    case 'MEDIUM': return 'yellow'
+    case 'HARD': return 'white'
+    case 'INTERMEDIATE': return 'green'
+    case 'WET': return 'blue'
+  }
 }

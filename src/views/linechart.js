@@ -1,5 +1,8 @@
 import * as d3 from 'd3'
-import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
+import {
+  getTeamColor, isSecondDriver, TR_TIME, trackStatusToColor,
+  trackStatusToString
+} from '../utils'
 
 export default function () {
   let data = []
@@ -10,6 +13,7 @@ export default function () {
   let updateWidth
   let updateHeight
   let svg
+  let title
   let bounds
   let xAxisContainer
   let yAxisContainer
@@ -19,15 +23,15 @@ export default function () {
     width: 800,
     height: 400,
     margin: {
-      top: 50,
+      top: 70,
       right: 80,
       bottom: 30,
       left: 80
     }
   }
 
-  // Tutorials online use an existing div and just change its opacity, wonder if its because of performance?
-  function onCircleEnter (e, d) {
+  // Tutorials online use an existing div and just change its opacity, i wonder if its because of performance?
+  function onPointEnter (e, d) {
     d3.select('#root')
       .append('div')
       .attr('class', 'tooltip')
@@ -35,16 +39,15 @@ export default function () {
 
     d3.selectAll('circle')
       .filter((d, i) => (d !== e.target.__data__)) // There's no way this is the best way to do this lol
-      .attr('opacity', 0.4)
+      .attr('opacity', 0.2)
 
     // DO it better for the love of god
     const id = (d3.select(`#${d.driver}`)) // gets the path i want to highlight
     const datum = (id._groups[0][0].__data__) // AGAIN there's no way this is correct lol
     d3.select('g').selectAll('path')
       .filter(p => p !== datum)
-      .attr('opacity', 0.4)
+      .attr('opacity', 0.2)
   }
-
   function onMouseMove (e, d) {
     // IF the margins are wrong the tooltip appears under the mouse, triggering the mouseleave event
     // https://stackoverflow.com/questions/15837650/why-is-my-tooltip-flashing-on-and-off
@@ -52,22 +55,20 @@ export default function () {
       .style('left', (d3.pointer(e)[0]) + dimensions.margin.left + dimensions.margin.right + 'px')
       .style('top', (d3.pointer(e)[1]) + dimensions.margin.top + dimensions.margin.bottom + 'px')
   }
-
-  function onCircleLeave (e, d) {
+  function onPointLeave (e, d) {
     d3.selectAll('.tooltip').remove()
     d3.selectAll('circle')
       .attr('opacity', 1)
     d3.select('g').selectAll('path')
       .attr('opacity', 1)
   }
-
   function onLineEnter (e, d) {
     d3.select('g').selectAll('path')
       .filter((d, i) => (d !== e.target.__data__)) // There's no way this is the best way to do this lol
-      .attr('opacity', 0.4)
+      .attr('opacity', 0.2)
     d3.selectAll('circle')
       .filter((d, i) => d.driver !== e.target.id)
-      .attr('opacity', 0.4)
+      .attr('opacity', 0.2)
   }
   function onLineLeave (e, d) {
     d3.select('g').selectAll('path')
@@ -97,18 +98,30 @@ export default function () {
       //
       xAxisContainer
         .transition().duration(TR_TIME)
-        .call(d3.axisBottom(xScale))
+        .call(d3.axisBottom(xScale).tickValues(xScale.ticks().concat(xScale.domain())))
       yAxisContainer
         .transition().duration(TR_TIME)
         .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
 
       //
       function dataJoin () {
-        const groupedData = d3.group(data.data, d => d.driver)
         // Add rectangles to represent track status
-        bounds.selectAll('rect')
+        bounds.selectAll('.trackStatus')
           .data(groupedData.get(winner).filter(lap => lap.trackStatus !== 1))
           .join(enterTrackStatus, updateTrackStatus, exitTrackStatus)
+
+        //
+        let trackStatuses = [...new Set(groupedData.get(winner).filter(lap => lap.trackStatus !== 1).map(d => d.trackStatus % 10))]
+        // This takes care of an edge case
+        // trackStatus = 7 means VSC ending, but usually i already have the number for VSC (6) in the data
+        // so, if both numbers are present, i get two VSCs in the legend, so i need to remove one of them
+        // there's probably a cleaner way to do this but i can't think of it right now
+        if (trackStatuses.includes(6)) {
+          trackStatuses = trackStatuses.filter(d => d !== 7)
+        }
+        svg.selectAll('g.legend')
+          .data(trackStatuses, d => d % 10)
+          .join(enterLegend, updateLegend, exitLegend)
 
         // Add grid lines to the chart
         // I tried to do this differently (not enter-update-exit first &
@@ -132,8 +145,17 @@ export default function () {
         // I changed the data binding because it's easier this way
         // but i wonder if there's a way to chain the scatter and line plot
         bounds.selectAll('circle')
-          .data(data.data) // removing the binding key actually binds each svg element to each datum,which is what i want
+          // use circles for first drivers
+          .data((data.data).filter(d => !isSecondDriver(d.driver))) // removing the binding key actually binds each svg element to each datum,which is what i want
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
+        bounds.selectAll('.square')
+          // use squares for second drivers
+          .data((data.data).filter(d => isSecondDriver(d.driver)))
+          .join(enterSquare, updateSquare, exitSquare)
+
+        // I either lower the track status rectangles' opacity
+        // or I do this to put the rectangles in the back
+        bounds.selectAll('.trackStatus').lower()
       }
       dataJoin()
 
@@ -144,21 +166,9 @@ export default function () {
           .attr('y', 0)
           .attr('width', xScale(2))
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top)
-          .style('opacity', 0.3)
-          .style('fill', d => {
-            switch (d.trackStatus % 10) {
-              case 2: return d3.schemeSet1[5] // yellow for yellow flag
-              case 4: return d3.schemeSet1[4] // orange for safety car
-              case 5: return d3.schemeSet1[0] // red for red flag
-              case 6: return 'white' // white for VSC
-              case 7: return 'white' // white for VSC (ending)
-              // This cases aren't considered, but could be done using a gradient
-              case 24: return d3.schemeSet1[4]
-              case 25: return d3.schemeSet1[0]
-              case 45: return d3.schemeSet1[0]
-              case 67: return 'white'
-            }
-          })
+          .attr('class', 'trackStatus')
+          .style('opacity', 1)
+          .style('fill', d => trackStatusToColor(d.trackStatus))
       }
       function updateTrackStatus (sel) {
         return sel
@@ -166,6 +176,7 @@ export default function () {
             .attr('x', d => xScale(d.lapNumber))
             .attr('width', xScale(2))
             .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top)
+            .style('fill', d => trackStatusToColor(d.trackStatus))
           )
       }
       function exitTrackStatus (sel) {
@@ -257,25 +268,24 @@ export default function () {
 
       // circles
       function enterCircleFn (sel) {
-        return sel.append('circle')
+        sel.append('circle')
           .attr('cx', d => xScale(d.lapNumber))
-          .attr('cy', d => isNaN(d.delta) ? console.log(d.delta) : yScale(d.delta))
+          .attr('cy', d => yScale(d.delta))
           .attr('r', dimensions.width / 360) // maybe change this ratio
-          .attr('stroke', d => getTeamColor(d.team))
-          .attr('stroke-width', 2)
           .attr('fill', d => getTeamColor(d.team))
           .attr('id', d => d.driver)
-          .on('mouseenter', (e, d) => onCircleEnter(e, d))
+          .style('stroke-width', '1px')
+          .style('stroke', '#282828')
+          .on('mouseenter', (e, d) => onPointEnter(e, d))
           .on('mousemove', (e, d) => onMouseMove(e, d))
-          .on('mouseleave', (e, d) => onCircleLeave(e, d))
-          // .raise()
+          .on('mouseleave', (e, d) => onPointLeave(e, d))
       }
       function updateCircleFn (sel) {
         return sel
           .call(update => update.transition().duration(TR_TIME)
             .attr('cx', d => xScale(d.lapNumber))
             .attr('cy', d => yScale(d.delta))
-            // .attr('r', dimensions.width / 360)
+            .attr('r', dimensions.width / 360)
             .attr('stroke', d => getTeamColor(d.team))
             .attr('fill', d => getTeamColor(d.team))
             .attr('id', d => d.driver)
@@ -288,7 +298,131 @@ export default function () {
       function exitCircleFn (sel) {
         return sel.call(exit => exit.remove())
       }
+      // squares
+      function enterSquare (sel) {
+        sel.append('rect')
+          .attr('class', 'square')
+          .attr('x', d => xScale(d.lapNumber) - dimensions.width / 360)
+          .attr('y', d => yScale(d.delta) - dimensions.width / 360)
+          .attr('width', dimensions.width / 180) // maybe change this ratio
+          .attr('height', dimensions.width / 180)
+          .attr('stroke', d => getTeamColor(d.team))
+          .attr('stroke-width', 2)
+          .attr('fill', d => getTeamColor(d.team))
+          .attr('id', d => d.driver)
+          .style('stroke-width', '1px')
+          .style('stroke', '#282828')
+          .on('mouseenter', (e, d) => onPointEnter(e, d))
+          .on('mousemove', (e, d) => onMouseMove(e, d))
+          .on('mouseleave', (e, d) => onPointLeave(e, d))
+      }
+      function updateSquare (sel) {
+        return sel
+          .call(update => update.transition().duration(TR_TIME)
+            .attr('x', d => xScale(d.lapNumber) - dimensions.width / 360)
+            .attr('y', d => yScale(d.delta) - dimensions.width / 360)
+            .attr('width', dimensions.width / 180) // maybe change this ratio
+            .attr('height', dimensions.width / 180)
+            .attr('stroke', d => getTeamColor(d.team))
+            .attr('fill', d => getTeamColor(d.team))
+            .attr('id', d => d.driver)
+          )
+          // after updating, some circles ended up behind new elements such as rectangles
+          // this re-inserts each selected element, in order, as the last child of its parent
+          // but kinda breaks the transition :c
+          // .raise()
+      }
+      function exitSquare (sel) {
+        return sel.call(exit => exit.remove())
+      }
 
+      // TrackStatusLegend
+      function enterLegend (sel) {
+        const g = sel.append('g')
+          .attr('class', 'legend')
+          .attr('id', d => d % 10)
+        g.append('rect')
+          .attr('x', (_d, i) => dimensions.margin.left + 150 * i)
+          .attr('y', 25)
+          .attr('width', 30)
+          .attr('height', 20)
+          .style('opacity', 1)
+          .style('fill', d => trackStatusToColor(d))
+        g.append('text')
+          .attr('x', (_d, i) => dimensions.margin.left + 150 * i + 35)
+          .attr('y', 40)
+          .text(d => ' = ' + trackStatusToString(d))
+          .style('fill', 'white')
+      }
+      function updateLegend (sel) {
+        sel.attr('id', d => d % 10)
+        const rect = sel.select('rect')
+        rect.call(update => update.transition().duration(TR_TIME)
+          .attr('x', (_d, i) => dimensions.margin.left + 150 * i)
+          .attr('y', 25)
+          .attr('width', 30)
+          .attr('height', 20)
+          .style('fill', d => trackStatusToColor(d))
+        )
+        const text = sel.select('text')
+        text.call(update => update.transition().duration(TR_TIME)
+          .attr('x', (_d, i) => dimensions.margin.left + 150 * i + 35)
+          .attr('y', 40)
+        )
+      }
+      function exitLegend (sel) {
+        sel.call(exit => exit.remove())
+      }
+      // Update function to handle zooming without transitions, as the duration makes zooming feel sluggish
+      function updateNoTr () {
+        xGridContainer.selectAll('.x-grid-lines')
+          .call(update => update
+            .attr('x1', d => xScale(d))
+            .attr('x2', d => xScale(d))
+            .attr('y1', 0)
+            .attr('y2', dimensions.height - dimensions.margin.top - dimensions.margin.bottom)
+          )
+        yGridContainer.selectAll('.y-grid-lines')
+          .call(update => update
+            .attr('x1', 0)
+            .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+            .attr('y1', d => yScale(d))
+            .attr('y2', d => yScale(d))
+          )
+        bounds.selectAll('path')
+          .call(update => update
+            .attr('d', d3.line()
+              .defined(d => !isNaN(d.delta))
+              .x(d => xScale(d.lapNumber))
+              .y(d => yScale(d.delta))
+            )
+          )
+
+        bounds.selectAll('circle')
+          .call(update => update
+            .attr('cx', d => xScale(d.lapNumber))
+            .attr('cy', d => yScale(d.delta))
+          // .attr('r', dimensions.width / 360)
+            .attr('stroke', d => getTeamColor(d.team))
+            .attr('fill', d => getTeamColor(d.team))
+            .attr('id', d => d.driver)
+          )
+        // after updating, some circles ended up behind new elements such as rectangles
+        // this re-inserts each selected element, in order, as the last child of its parent
+        // but kinda breaks the transition :c
+          .raise()
+
+        bounds.selectAll('.square')
+          .call(update => update
+            .attr('x', d => xScale(d.lapNumber) - dimensions.width / 360)
+            .attr('y', d => yScale(d.delta) - dimensions.width / 360)
+            .attr('width', dimensions.width / 180) // maybe change this ratio
+            .attr('height', dimensions.width / 180)
+            .attr('stroke', d => getTeamColor(d.team))
+            .attr('fill', d => getTeamColor(d.team))
+            .attr('id', d => d.driver)
+          )
+      }
       const zoom = d3.zoom()
         .extent([[0, 0], [dimensions.width, dimensions.height]])
         .scaleExtent([1, 10])
@@ -299,7 +433,7 @@ export default function () {
         const y = e.transform.rescaleY(yScaleCopy)
         yScale.domain(y.domain())
         yAxisContainer.call(d3.axisLeft(y).tickFormat(d3.timeFormat('%M:%S.%L')))
-        dataJoin()
+        updateNoTr()
       }
       svg.call(zoom)
 
@@ -322,10 +456,10 @@ export default function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
         svg
           .attr('width', dimensions.width)
+        title.transition().duration(TR_TIME)
+          .attr('x', dimensions.width / 2)
 
-        xAxisContainer
-          .transition()
-          .duration(TR_TIME)
+        xAxisContainer.transition().duration(TR_TIME)
           .call(d3.axisBottom(xScale))
 
         dataJoin()
@@ -377,6 +511,15 @@ export default function () {
     svg = selection.append('svg')
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
+
+    title = svg.append('text')
+      .text('Delta to Race Winner')
+      .attr('x', dimensions.width / 2)
+      .attr('y', 15)
+      // move these to scss
+      .attr('font-size', '20px')
+      .attr('fill', 'white')
+      .style('text-anchor', 'middle')
 
     bounds = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)

@@ -13,16 +13,26 @@ body {
 
   display: grid; 
   grid-template-columns: 1fr 1fr 1fr; 
-  grid-template-rows: 0.2fr 1.4fr 1.4fr; 
+  grid-template-rows: 0.1fr 1.4fr 1.5fr; 
   gap: 0px 0px; 
   grid-template-areas: 
     "header header header"
     "linechart_container linechart_container linechart_container"
     "parallel_coordinates_container stacked_barchart_container scatterplot_container"; 
+    
   }
   
   
-  .header { grid-area: header; }  
+  .header { 
+    grid-area: header;
+    margin-left: 30px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }  
+  .selection{
+    grid-area: header;
+    margin-left: 10px;
+  }
   .linechart_container {
     overflow: hidden;
     display: grid; 
@@ -33,13 +43,20 @@ body {
       "legend linechart_graph"; 
     grid-area: linechart_container; 
   }
-  .drivers_legend { 
+  .linechart_container hr {
+    margin: 0;
+    position: fixed;
+    width:100vw;
+  }
+  .drivers_legend {
     grid-area: legend;
+    margin-top: 10px;
     overflow:hidden;
     max-width: 250px;
   }
   .linechart { 
     grid-area: linechart_graph;
+    margin-top: 10px;
     overflow: hidden;
   }
   .parallel_coordinates_container { 

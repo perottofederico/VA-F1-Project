@@ -28,24 +28,27 @@ function setupPage () {
   const list = getRacesList()
   const menuContainer = d3.select('#root').append('div')
     .attr('class', 'header')
+    .html('Select a race: ')
+    .style('font-size', '20px')
     .append('select')
     .attr('id', 'selectButton')
     .attr('class', 'selection')
     .on('change', () => updateData())
-
   menuContainer.selectAll('option')
     .data(list).enter()
     .append('option')
     .attr('value', d => d)
-    .text(d => d)
+    .text(d => d.replace('_', ': '))
 
   // Containers for views
   const linechartContainer = d3.select('#root').append('div')
     .attr('class', 'linechart_container')
     .attr('id', 'linechart_container')
+    .html('<hr>')
     .append('div')
     .attr('class', 'linechart')
     .attr('id', 'linechart')
+
   const { width, height } = linechartContainer.node().getBoundingClientRect()
   controller.linechart
     .width(width)

@@ -11,13 +11,14 @@ export default function () {
   let updateHeight
   let svg
   let bounds
+  let title
   const dimensions = {
     width: 800,
     height: 400,
     margin: {
-      top: 30,
+      top: 70,
       right: 50,
-      bottom: 30,
+      bottom: 20,
       left: 80
     }
   }
@@ -109,7 +110,7 @@ export default function () {
           if (d === 'AvgLaptime') {
             d3.select(this).call(d3.axisLeft().scale(yScales[d]).tickFormat(d3.timeFormat('%M:%S.%L')))
           } else {
-            d3.select(this).call(d3.axisLeft().scale(yScales[d]))
+            d3.select(this).call(d3.axisLeft().scale(yScales[d]).tickValues(yScales[d].ticks().concat(yScales[d].domain())))
           }
           // Add brushing to axes
           d3.select(this).call(brush)
@@ -123,7 +124,7 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('path')
-          .data(graphData, d => d.team)
+          .data(graphData, d => d.driver)
           .join(enterLine, updateLine, exitLine)
       }
       function enterLine (sel) {
@@ -139,6 +140,7 @@ export default function () {
         return sel
           .call(update => update.transition().duration(TR_TIME)
             .attr('d', d => line(d3.cross(metrics, [d], (metric, d) => [metric, d[metric]])))
+            .attr('id', d => d.driver)
           )
       }
       function exitLine (sel) {
@@ -182,6 +184,8 @@ export default function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
         svg
           .attr('width', dimensions.width)
+        title.transition().duration(TR_TIME)
+          .attr('x', dimensions.width / 2)
 
         d3.selectAll('.parallelCoordinates_yAxisContainer')
           .each(function (d) {
@@ -280,6 +284,15 @@ export default function () {
 
     bounds = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+
+    title = svg.append('text')
+      .text('Race Metrics')
+      .attr('x', dimensions.width / 2)
+      .attr('y', 25)
+    // move these to scss
+      .attr('font-size', '20px')
+      .attr('fill', 'white')
+      .style('text-anchor', 'middle')
 
     const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']
 

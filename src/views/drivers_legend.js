@@ -8,12 +8,13 @@ export default function () {
   let updateHeight
   let svg
   let bounds
+  let title
   const dimensions = {
     width: 100,
     height: 300,
     margin: {
-      top: 5,
-      right: 70,
+      top: 50,
+      right: 20,
       bottom: 30,
       left: 10
     }
@@ -40,11 +41,9 @@ export default function () {
 
   function drivers_legend (selection) {
     selection.each(function () {
-      console.log(data)
-
       function dataJoin () {
         bounds.selectAll('g')
-          .data(d3.sort(data.data, d => d.TeamName))
+          .data(d3.sort(d3.sort(data.data, d => isSecondDriver(d.Abbreviation)), d => d.TeamName))
           .join(enterFn, updateFn, exitFn)
       }
       dataJoin()
@@ -58,8 +57,8 @@ export default function () {
 
         p.append('text')
           .attr('id', d => d.Abbreviation)
-          .attr('x', (d, i) => i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
-          .attr('y', (d, i) => (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top)
+          .attr('x', (d, i) => i % 2 ? dimensions.width / 2 + dimensions.margin.left : dimensions.margin.left)
+          .attr('y', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10))
           .text(function (d) { return d.Abbreviation })
           .style('fill', d => getTeamColor(d.TeamName))
           .style('opacity', d => d.Status !== 'Finished' ? 0.3 : 1)
@@ -67,32 +66,63 @@ export default function () {
           .style('font-weight', 700)
 
         p.append('line')
-          .attr('x1', (d, i) => (i % 2 ? dimensions.width - 30 : dimensions.margin.left + 40))
-          .attr('x2', (d, i) => (i % 2 ? dimensions.width : dimensions.margin.left + 60))
-          .attr('y1', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
-          .attr('y2', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
+          .attr('id', d => d.Abbreviation)
+          .attr('x1', (d, i) => (i % 2 ? dimensions.width / 2 + dimensions.margin.left + 40 : dimensions.margin.left + 40))
+          .attr('x2', (d, i) => (i % 2 ? dimensions.width / 2 + dimensions.margin.left + 60 : dimensions.margin.left + 60))
+          .attr('y1', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10) - 5)
+          .attr('y2', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10) - 5)
           .attr('stroke', d => getTeamColor(d.TeamName))
           .attr('stroke-width', 2.5)
           .attr('class', d => isSecondDriver(d.Abbreviation) ? 'dashed' : '')
+
+        p.filter(d => !isSecondDriver(d.Abbreviation)).append('circle')
+          .attr('cx', dimensions.margin.left + 60)
+          .attr('cy', (d, i) => ((dimensions.height - dimensions.margin.bottom) * i / 10) - 5)
+          .attr('r', 5)
+          .attr('fill', d => getTeamColor(d.TeamName))
+          .attr('id', d => d.driver)
+          .style('stroke-width', '1px')
+          .style('stroke', '#282828')
+
+        p.filter(d => isSecondDriver(d.Abbreviation)).append('rect')
+          .attr('class', 'square')
+          .attr('x', d => dimensions.width / 2 + dimensions.margin.left + 60)
+          .attr('y', (d, i) => ((dimensions.height - dimensions.margin.bottom) * i / 10) - 10)
+          .attr('width', 10) // maybe change this ratio
+          .attr('height', 10)
+          .attr('fill', d => getTeamColor(d.TeamName))
+          .attr('id', d => d.driver)
+          .style('stroke-width', '1px')
+          .style('stroke', '#282828')
       }
       function updateFn (sel) {
+        sel.attr('id', d => d.Abbreviation)
         const text = sel.select('text')
           .attr('id', d => d.Abbreviation)
         text.call(update => update.transition().duration(TR_TIME)
           .attr('id', d => d.Abbreviation)
-          .attr('x', (d, i) => i % 2 ? dimensions.width - dimensions.margin.right : dimensions.margin.left)
-          .attr('y', (d, i) => (dimensions.height * Math.floor(i / 2) / 10) + dimensions.margin.top)
+          .attr('x', (d, i) => i % 2 ? dimensions.width / 2 + dimensions.margin.left : dimensions.margin.left)
+          .attr('y', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10))
           .text(function (d) { return d.Abbreviation })
         )
 
         const line = sel.select('line')
+          .attr('id', d => d.Abbreviation)
         line.call(update => update.transition().duration(TR_TIME)
-          .attr('x1', (d, i) => (i % 2 ? dimensions.width - 40 : dimensions.margin.left + 40))
-          .attr('x2', (d, i) => (i % 2 ? dimensions.width - 20 : dimensions.margin.left + 60))
-          .attr('y1', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
-          .attr('y2', (d, i) => (dimensions.height * Math.floor(i / 2) / 10))
+          .attr('x1', (d, i) => (i % 2 ? dimensions.width / 2 + dimensions.margin.left + 40 : dimensions.margin.left + 40))
+          .attr('x2', (d, i) => (i % 2 ? dimensions.width / 2 + dimensions.margin.left + 60 : dimensions.margin.left + 60))
+          .attr('y1', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10) - 5)
+          .attr('y2', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10) - 5)
           .attr('stroke', d => getTeamColor(d.TeamName))
         )
+
+        bounds.selectAll('circle').transition().duration(TR_TIME)
+          .attr('cx', dimensions.margin.left + 60)
+          .attr('cy', (d, i) => ((dimensions.height - dimensions.margin.bottom) * i / 10) - 5)
+
+        bounds.selectAll('rect').transition().duration(TR_TIME)
+          .attr('x', d => dimensions.width / 2 + dimensions.margin.left + 60)
+          .attr('y', (d, i) => ((dimensions.height - dimensions.margin.bottom) * i / 10) - 10)
       }
       function exitFn (sel) {
         const text = sel.select('text')
@@ -108,6 +138,9 @@ export default function () {
       updateWidth = function () {
         svg
           .attr('width', dimensions.width < 250 ? dimensions.width : 250)
+
+        title.transition().duration(TR_TIME)
+          .attr('x', dimensions.width / 2)
         dataJoin()
       }
       updateHeight = function () {
@@ -140,6 +173,14 @@ export default function () {
     svg = selection.append('svg')
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
+
+    title = svg.append('text')
+      .text('Drivers')
+      .attr('x', dimensions.width / 2)
+      .attr('y', 15)
+      .attr('fill', 'white')
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '20px')
 
     bounds = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
