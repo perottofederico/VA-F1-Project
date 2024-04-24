@@ -19,7 +19,7 @@ export default function () {
       top: 70,
       right: 20,
       bottom: 30,
-      left: 50
+      left: 40
     }
   }
   function mouseover (event, d) {
@@ -31,20 +31,30 @@ export default function () {
       '<br> Compound: ' + d.compound)
 
     // Highlight corresponding laps in linechart
-    d3.select('.linechart_container').select('.linechart').selectAll('circle')
-      .style('opacity', datum => {
-        if (datum.driver === d.driver) {
-          if (datum.lapNumber <= (d.lap + d.length) && datum.lapNumber >= d.lap) {
-            return 1
-          }
-        }
-        return 0.2
-      })
+    const elems = d3.select('.linechart_container').select('.linechart')
+      .select('.contents').selectAll('#' + d.driver)
+    elems.style('opacity', datum =>
+      datum.lapNumber <= (d.lap + d.length) && datum.lapNumber >= d.lap ? 1 : 0.1
+    )
+    elems.raise()
   }
   function mouseleave (event, d) {
     d3.selectAll('.tooltip').remove()
-    d3.select('.linechart_container').select('.linechart').selectAll('circle')
-      .style('opacity', 1)
+    const selectedDrivers = drivers.data.map(d => d.Abbreviation)
+      .filter(driver => d3.select('.drivers_legend').select('#' + driver).attr('selected') === 'true')
+    if (d3.select('.drivers_legend').select('#' + d.driver).attr('selected') === 'true' || selectedDrivers.length === 0) {
+      d3.select('.linechart_container').select('.linechart').selectAll('#' + d.driver)
+        .style('opacity', 1)
+    } else {
+      d3.select('.linechart_container').select('.linechart').selectAll('#' + d.driver)
+        .style('opacity', 0.1)
+    }
+    /*
+    if (selectedDrivers.length === 0) {
+      d3.select('.linechart_container').select('.linechart').selectAll('#' + d.driver)
+        .style('opacity', 1)
+    }
+    */
   }
   function mousemove (event, d) {
     d3.select('.tooltip')
@@ -71,7 +81,7 @@ export default function () {
         .padding(0.3)
 
       //
-      xAxisContainer.call(d3.axisBottom(xScale).tickValues(xScale.ticks().concat(xScale.domain())))
+      xAxisContainer.transition().duration(TR_TIME).call(d3.axisBottom(xScale))
       yAxisContainer.call(d3.axisLeft(yScale))
 
       // Color y axis labels
@@ -149,14 +159,14 @@ export default function () {
           .attr('class', 'legend')
           .attr('id', d => d)
         g.append('rect')
-          .attr('x', (_d, i) => dimensions.margin.left + 90 * i)
+          .attr('x', (d, i) => dimensions.margin.left + 90 * i)
           .attr('y', 45)
           .attr('width', 20)
           .attr('height', yScale.bandwidth())
           .style('opacity', 1)
           .style('fill', d => compoundToColor(d))
         g.append('text')
-          .attr('x', (_d, i) => dimensions.margin.left + 90 * i + 25)
+          .attr('x', (d, i) => dimensions.margin.left + 90 * i + 25)
           .attr('y', 55)
           .text(d => '= ' + d)
           .style('fill', 'white')
@@ -182,7 +192,9 @@ export default function () {
 
       //
       updateData = function () {
-        xScale.domain([0, groupedLaps.get(drivers.data[0].Abbreviation).length])
+        xScale
+          .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
+          .domain([0, groupedLaps.get(drivers.data[0].Abbreviation).length])
         yScale.domain(d3.map(d3.sort(drivers.data, d => d.TeamName), d => d.Abbreviation))
         xAxisContainer
           .transition()
@@ -255,6 +267,7 @@ export default function () {
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
     bounds = svg.append('g')
+      .attr('class', 'contents')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
     title = svg.append('text')
       .text('Tyre Strategies')

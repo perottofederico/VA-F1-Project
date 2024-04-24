@@ -102,10 +102,39 @@ export function trackStatusToString (trackStatus) {
 
 export function compoundToColor (compound) {
   switch (compound) {
-    case 'SOFT': return 'red'
-    case 'MEDIUM': return 'yellow'
-    case 'HARD': return 'white'
-    case 'INTERMEDIATE': return 'green'
-    case 'WET': return 'blue'
+    case 'SOFT': return '#ff2928'
+    case 'MEDIUM': return '#fffd19'
+    case 'HARD': return '#fff'
+    case 'INTERMEDIATE': return '#3bcd2a'
+    case 'WET': return '#018dd2'
   }
+}
+export function handleSelection () {
+  const allDrivers = [...d3.select('.drivers_legend').select('g').selectAll('g')].map(driver => driver.id)
+  // There's three different possible graphs that set the 'selected' status
+  // drivers_legend
+  const dlBounds = d3.select('.drivers_legend')
+  const dlSelection = dlBounds.selectAll('g[selected = true]')
+  // parallel_coordinates
+  const pcBounds = d3.select('.parallel_coordinates_container').select('.contents')
+  const pcSelection = pcBounds.selectAll('path[selected = true]')
+  // stacked_barchart
+
+  //
+  const selected = [...dlSelection, ...pcSelection].map(driver => driver.id)
+  if (!selected.length) {
+    allDrivers.forEach(driver => {
+      d3.selectAll('#' + driver).style('opacity', 1)
+    })
+  } else {
+    allDrivers.filter(driver => !selected.includes(driver)).forEach(elem => {
+      d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0.1)
+      d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
+    })
+    selected.forEach(elem => {
+      d3.selectAll('#' + elem).style('opacity', 1)
+    })
+  }
+  const set = new Set(selected)
+  // console.log(set)
 }

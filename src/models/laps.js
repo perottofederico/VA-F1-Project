@@ -59,7 +59,8 @@ class Laps {
     let ignoredLaps = 0
     if (driverLaps.length > 1) {
       driverLaps.forEach(lap => {
-      // only consider laps in which drivers are actually racing (i.e. track status is 1)
+        console.log(lap.driver)
+        // only consider laps in which drivers are actually racing (i.e. track status is 1)
         if (lap.lapTime !== null && lap.trackStatus === 1) {
           // convert lap time to ms
           totalLapTime = totalLapTime + this.laptimeToMilliseconds(lap.lapTime)
@@ -82,7 +83,7 @@ class Laps {
     let ignoredLaps = 0
     if (driverLaps.length > 1) {
       driverLaps.forEach(lap => {
-      // only consider laps in which drivers are actually racing (i.e. track status is 1)
+        // only consider laps in which drivers are actually racing (i.e. track status is 1)
         if (lap.lapTime !== null && lap.trackStatus === 1) {
           // convert lap time to ms
           totalLapTime += this.laptimeToMilliseconds(lap.lapTime)
@@ -90,23 +91,26 @@ class Laps {
           ignoredLaps += 1
         }
       })
+      // If the driver somehow dnfd after the first lap and when no racing laps where done (e.g. Norris in Las Vegas)
+      // we would have driverLaps.length===ignoredLaps, so a division by 0
+      if (driverLaps.length !== ignoredLaps) {
+        avgLaptime = totalLapTime / (driverLaps.length - ignoredLaps)
+      } else avgLaptime = 0
 
-      avgLaptime = totalLapTime / (driverLaps.length - ignoredLaps)
-
-      //
-      // Laptime Consistency
-      let sumOfSquares = 0
+      // Laptime Consistency (aka standard deviation)
+      let sumOfSquaredDiffs = 0
       driverLaps.forEach(lap => {
         if (lap.lapTime !== null && lap.trackStatus === 1) {
-          sumOfSquares += (this.laptimeToMilliseconds(lap.lapTime) - (avgLaptime)) ** 2
+          sumOfSquaredDiffs += (this.laptimeToMilliseconds(lap.lapTime) - (avgLaptime)) ** 2
         }
       })
-      const stdDev = Math.sqrt(sumOfSquares / (ignoredLaps + 1)) // to avoid dividing by zero lol
-      laptimeConsistency = Math.round((stdDev / avgLaptime * 100) * 1000) / 1000 // toFixed(3) converts it to a string but maybe its fine?
+      // Again, avoid edge cases where we end up dividing by zero
+      if (driverLaps.length !== ignoredLaps) {
+        const variance = sumOfSquaredDiffs / (driverLaps.length - ignoredLaps)
+        laptimeConsistency = (100 - (Math.sqrt(variance) * 100 / avgLaptime))
+      }
     }
-
     //
-    // avgLaptime = this.millisecondsToLaptime(avgLaptime)
     return {
       avgLaptime,
       laptimeConsistency

@@ -52,6 +52,7 @@ body {
     grid-area: legend;
     margin-top: 10px;
     overflow:hidden;
+    min-width: 205px;
     max-width: 250px;
   }
   .linechart { 

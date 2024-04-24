@@ -14,7 +14,7 @@ class PitStops {
   computeMetrics (lastName) {
     let totalTime = 0
     this.data.forEach(d => {
-      if (d.lastName === lastName) {
+      if (d.lastName.toLowerCase() === lastName.toLowerCase()) {
         totalTime += d.time
       }
     })

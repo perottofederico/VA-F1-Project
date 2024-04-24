@@ -74,8 +74,6 @@ export default function () {
       }
       function exitCircleFn (sel) {
         return sel.call(exit => exit
-          .transition().duration(TR_TIME)
-          .attr('opacity', 0)
           .remove())
       }
 
@@ -188,6 +186,7 @@ export default function () {
 
     //
     bounds = svg.append('g')
+      .attr('class', 'contents')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
     title = svg.append('text')
       .text('Dimensionality Reduction')

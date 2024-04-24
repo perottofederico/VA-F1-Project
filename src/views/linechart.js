@@ -15,6 +15,7 @@ export default function () {
   let svg
   let title
   let bounds
+  let clip
   let xAxisContainer
   let yAxisContainer
   let xGridContainer
@@ -26,7 +27,7 @@ export default function () {
       top: 70,
       right: 80,
       bottom: 30,
-      left: 80
+      left: 60
     }
   }
 
@@ -98,10 +99,32 @@ export default function () {
       //
       xAxisContainer
         .transition().duration(TR_TIME)
-        .call(d3.axisBottom(xScale).tickValues(xScale.ticks().concat(xScale.domain())))
+        .call(d3.axisBottom(xScale))
       yAxisContainer
         .transition().duration(TR_TIME)
         .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+
+      clip = bounds.append('defs').append('clipPath')
+        .attr('id', 'clip')
+        .append('rect')
+        .attr('width', dimensions.width - dimensions.margin.right)
+        .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
+        .attr('x', 0)
+        .attr('y', -5)
+
+      const zoom = d3.zoom()
+        .extent([[0, 0], [dimensions.width, dimensions.height]])
+        .scaleExtent([1, 15])
+        .translateExtent([[0, 0], [dimensions.width, dimensions.height]])
+        .on('zoom', handleZoom)
+
+      function handleZoom (e) {
+        const y = e.transform.rescaleY(yScaleCopy)
+        yScale.domain(y.domain())
+        yAxisContainer.call(d3.axisLeft(y).tickFormat(d3.timeFormat(d3.timeFormat('%M:%S.%L'))))
+        updateNoTr()
+      }
+      svg.call(zoom)
 
       //
       function dataJoin () {
@@ -423,19 +446,6 @@ export default function () {
             .attr('id', d => d.driver)
           )
       }
-      const zoom = d3.zoom()
-        .extent([[0, 0], [dimensions.width, dimensions.height]])
-        .scaleExtent([1, 10])
-        .translateExtent([[0, 0], [dimensions.width, dimensions.height]])
-        .on('zoom', handleZoom)
-
-      function handleZoom (e) {
-        const y = e.transform.rescaleY(yScaleCopy)
-        yScale.domain(y.domain())
-        yAxisContainer.call(d3.axisLeft(y).tickFormat(d3.timeFormat('%M:%S.%L')))
-        updateNoTr()
-      }
-      svg.call(zoom)
 
       //
       updateData = function () {
@@ -454,13 +464,16 @@ export default function () {
 
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
-        svg
-          .attr('width', dimensions.width)
+        svg.attr('width', dimensions.width)
         title.transition().duration(TR_TIME)
           .attr('x', dimensions.width / 2)
 
         xAxisContainer.transition().duration(TR_TIME)
           .call(d3.axisBottom(xScale))
+        svg.call(zoom)
+        clip
+          .attr('width', dimensions.width - dimensions.margin.right)
+          .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
 
         dataJoin()
       }
@@ -477,6 +490,10 @@ export default function () {
           .transition()
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+        svg.call(zoom)
+        clip
+          .attr('width', dimensions.width - dimensions.margin.right)
+          .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
 
         dataJoin()
       }
@@ -522,6 +539,8 @@ export default function () {
       .style('text-anchor', 'middle')
 
     bounds = svg.append('g')
+      .attr('class', 'contents')
+      .attr('clip-path', 'url(#clip)')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
 
     xAxisContainer = svg.append('g')

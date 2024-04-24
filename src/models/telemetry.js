@@ -15,7 +15,7 @@ class Telemetry {
     let total = 0
     let divisor = 0
     csv.forEach(row => {
-      if (Date.parse(row.Date) >= startDate || Date.parse(row.Date) <= endDate) {
+      if (Date.parse(row.Date) >= startDate && Date.parse(row.Date) <= endDate) {
         total += parseInt(row.Speed)
         divisor += 1
       }
