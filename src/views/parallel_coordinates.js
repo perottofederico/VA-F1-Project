@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor, isSecondDriver, TR_TIME, handleSelection } from '../utils'
+import { EPSILON, TR_TIME, getTeamColor, isSecondDriver, handleSelection } from '../utils'
 
 export default function () {
   let laps = []
@@ -12,6 +12,7 @@ export default function () {
   let svg
   let bounds
   let title
+  let clip
   const dimensions = {
     width: 800,
     height: 400,
@@ -27,12 +28,11 @@ export default function () {
     selection.each(async function () {
       // Create an array to contain the computed data
       const graphData = []
+      // Create an array to store all the telemetry promises
+      const telemetryPromises = []
 
       // Group the laps
       const groupedLaps = d3.group(laps.data, d => d.driver)
-      /// Create an array to store all the telemetry promises
-      const telemetryPromises = []
-
       groupedLaps.forEach(d => {
         if (d.length > 1) {
         // compute the metrics based on the laps data
@@ -40,7 +40,7 @@ export default function () {
 
           // pitstop data uses the last name as identifiers rather than the abbreviation
           // So I use the results data to go from the abbreviation to the last name of each driver
-          // and then I compute their total pitstop time
+          // and then I compute the pitstop data (i.e. total pitstop time)
           const lastName = drivers.data.find(n => n.Abbreviation === d[0].driver).LastName
           const pitStopsMetrics = pitStops.computeMetrics(lastName)
 
@@ -97,20 +97,16 @@ export default function () {
         .domain(metrics)
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
 
-      /*
-        const xAxisContainer = wrapper.append('g')
-        .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
-        .classed('parallelCoordinates_xAxisContainer', true)
-      xAxisContainer.call(d3.axisBottom(xScale)).style('font-size', 12)
-      */
-
       // Create brush behaviour
       const selections = new Map()
       const brush = d3.brushY()
         // maybe add a little extra on the height for clarity
-        .extent([[-20, -5], [20, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
-        .on('start brush end', brushed)
+        .extent([[-45, -5], [45, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
+        .on('end', brushZoom)
 
+      // This version of the brushing function only really highlighted the
+      // paths that were inside the brush. I decided to replace it with the one below
+      // because i think it makes more sense and works better
       function brushed ({ selection }, key) {
         if (selection === null) selections.delete(key)
         else selections.set(key, selection.map(yScales[key].invert))
@@ -142,6 +138,110 @@ export default function () {
         handleSelection()
       }
 
+      // Brushing zoom function
+      function brushZoom ({ selection }, key) {
+        const scale = yScales[key]
+        if (selection) {
+          // Update the domain
+          if (key === 'AvgLaptime' || key === 'PitStopTime') {
+            scale.domain([scale.invert(selection[0]), scale.invert(selection[1])])
+          } else {
+            scale.domain([scale.invert(selection[1]), scale.invert(selection[0])])
+          }
+
+          // To change the status of the paths outside the brushing windows,
+          // i need to compute which paths should still be considered 'selected'
+          // i.e. which paths have all their components still inside the domains of all the axes
+          // which means:
+          // - iterating through all paths.
+          // - for each path, check if it falls within the new domain of the axis
+          // - repeat for all the axes
+          // - if it does for all the axes, then selected = true, otherwise selected = false
+          bounds.selectAll('path').each(driver => {
+            let selected = true
+            metrics.forEach(metric => {
+              const range = yScales[metric].domain()
+              // comparison with floating point values was giving stupid results :)
+              if (driver[metric] <= range[0] - EPSILON || driver[metric] >= range[1] + EPSILON) {
+                selected = false
+              }
+            })
+            bounds.select('#' + driver.driver)
+              .attr('selected', selected ? 'true' : 'false')
+          })
+          // call an outside function to handle setting the opacity and interactivity
+          handleSelection()
+
+          // Call the axes to apply the updated domain
+          // (I know its dumb to retrieve the axis like this, TODO fix by adding an id to the axis and using that to select it, same for resetZoom)
+          svg.selectAll('.parallelCoordinates_yAxisContainer')
+            .filter(d => d === key)
+            .each(function (d) {
+              if (d === 'AvgLaptime') {
+                d3.select(this)
+                  .transition().duration(TR_TIME)
+                  .call(d3.axisLeft().scale(yScales[d]).tickFormat(d3.timeFormat('%M:%S.%L')))
+              } else {
+                d3.select(this)
+                  .transition().duration(TR_TIME)
+                  .call(d3.axisLeft().scale(yScales[d]).tickValues(yScales[d].ticks().concat(yScales[d].domain())))
+              }
+            })
+          dataJoin()
+
+          // This removes the grey brush area as soon as the selection has been done
+          svg.selectAll('.parallelCoordinates_yAxisContainer')
+            .filter(d => d === key)
+            .transition().duration(TR_TIME)
+            .call(brush.move, null)
+        }
+      }
+
+      // function to reset the zoom (domain) of an axis
+      function resetZoom (event, key) {
+        const scale = yScales[key]
+
+        if (key === 'AvgLaptime' || key === 'PitStopTime') {
+          scale.domain(d3.extent(graphData, d => d[key]))
+        } else {
+          scale.domain(d3.extent(graphData, d => d[key]))
+        }
+
+        // when resetting the zoom on one of the scales
+        // I need to recompute which paths should still be considered 'selected'
+        // i.e. which paths have all their components still inside the domains of all the axes
+        // which is the same process as in the brushing function
+        bounds.selectAll('path').each(driver => {
+          let selected = true
+          metrics.forEach(metric => {
+            const range = yScales[metric].domain()
+            if (driver[metric] <= range[0] - EPSILON || driver[metric] >= range[1] + EPSILON) {
+              selected = false
+            }
+          })
+          bounds.select('#' + driver.driver)
+            .attr('selected', selected ? 'true' : 'false')
+        })
+        // call an outside function to handle setting the opacity and interactivity
+        handleSelection()
+
+        // see brushZoom
+        svg.selectAll('.parallelCoordinates_yAxisContainer')
+          .filter(d => d === key)
+          .each(function (d) {
+            if (d === 'AvgLaptime') {
+              d3.select(this)
+                .transition().duration(TR_TIME)
+                .call(d3.axisLeft().scale(yScales[d]).tickFormat(d3.timeFormat('%M:%S.%L')))
+            } else {
+              d3.select(this)
+                .transition().duration(TR_TIME)
+                .call(d3.axisLeft().scale(yScales[d]).tickValues(yScales[d].ticks().concat(yScales[d].domain())))
+            }
+          })
+        dataJoin()
+      }
+
       // call the y axes
       svg.selectAll('.parallelCoordinates_yAxisContainer')
         .data(metrics)
@@ -154,6 +254,7 @@ export default function () {
           }
           // Add brushing to axes
           d3.select(this).call(brush)
+            .on('dblclick', resetZoom)
         })
 
       //
@@ -174,7 +275,7 @@ export default function () {
           .attr('stroke', d => getTeamColor(d.team))
           .attr('stroke-width', 3.5)
           .attr('class', d => isSecondDriver(d.driver) ? 'dashed' : '')
-          .attr('selected', 'false')
+          .attr('selected', 'true')
           .attr('d', d => line(d3.cross(metrics, [d], (metric, d) => [metric, d[metric]])))
       }
       function updateLine (sel) {
@@ -231,23 +332,30 @@ export default function () {
               .attr('transform', d => `translate(${dimensions.margin.left + xScale((d))}, ${dimensions.margin.top})`)
               .call(brush)
           })
+
+        d3.select('.clip2').select('rect')
+          .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+          .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
         dataJoin()
       }
       updateHeight = function () {
         metrics.forEach(m => {
           if (m === 'AvgLaptime' || m === 'PitStopTime') {
-            yScales[m] = d3.scaleLinear()
-              .domain(d3.extent(graphData, d => d[m]))
+            yScales[m]
               .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
           } else {
-            yScales[m] = d3.scaleLinear()
-              .domain(d3.extent(graphData, d => (d[m])))
+            yScales[m]
               .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
           }
         })
-        svg
-          .attr('height', dimensions.height)
 
+        svg.attr('height', dimensions.height)
+
+        clip
+          .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+          .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 10)
+
+        brush.extent([[-45, -5], [45, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
         d3.selectAll('.parallelCoordinates_yAxisContainer')
           .each(function (d) {
             if (d === 'AvgLaptime') {
@@ -261,41 +369,11 @@ export default function () {
                 .duration(TR_TIME)
                 .call(d3.axisLeft().scale(yScales[d]))
             }
+            d3.select(this).call(brush)
           })
+
         dataJoin()
       }
-
-      /*
-      // Brushing function
-      // This works but its pretty laggy, probably due to the amount of loops lol
-      function brushed ({ selection }, key) {
-        if (selection === null) selections.delete(key)
-        else selections.set(key, selection.map(yScales[key].invert))
-
-        let selected = drivers.data.map(d => d.Abbreviation)
-
-        bounds.selectAll('path').each(function (d) {
-          // Since I decided to have different ranges for some axes
-          // I also need to adapt the check to the current axis
-          let isIncluded
-          Array.from(selections)
-            .forEach((elem) => {
-              if (elem[0] === 'AvgLaptime' || elem[0] === 'PitStopTime') {
-                isIncluded = (d[elem[0]] >= elem[1][0] && d[elem[0]] <= elem[1][1])
-              } else {
-                isIncluded = (d[elem[0]] >= elem[1][1] && d[elem[0]] <= elem[1][0])
-              }
-
-              if (!isIncluded && selected.includes(d.driver)) {
-                selected = selected.filter(driver => driver !== d.driver)
-              }
-            })
-        })
-        bounds.selectAll('path').each(function (d) {
-          d3.selectAll('#' + d.driver).attr('opacity', !selected.includes(d.driver) ? 0.3 : 1)
-        })
-      }
-      */
     })
   }
 
@@ -343,10 +421,6 @@ export default function () {
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
 
-    bounds = svg.append('g')
-      .attr('class', 'contents')
-      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-
     title = svg.append('text')
       .text('Race Metrics')
       .attr('x', dimensions.width / 2)
@@ -355,6 +429,19 @@ export default function () {
       .attr('font-size', '20px')
       .attr('fill', 'white')
       .style('text-anchor', 'middle')
+
+    bounds = svg.append('g')
+      .attr('class', 'contents')
+      .attr('clip-path', 'url(#clip2)')
+      .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+
+    clip = bounds.append('defs').append('clipPath')
+      .attr('id', 'clip2')
+      .append('rect')
+      .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+      .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 10)
+      .attr('x', 0)
+      .attr('y', -5)
 
     const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']
 

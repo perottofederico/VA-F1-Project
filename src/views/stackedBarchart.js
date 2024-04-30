@@ -31,12 +31,14 @@ export default function () {
       '<br> Compound: ' + d.compound)
 
     // Highlight corresponding laps in linechart
+    /*
     const elems = d3.select('.linechart_container').select('.linechart')
       .select('.contents').selectAll('#' + d.driver)
     elems.style('opacity', datum =>
       datum.lapNumber <= (d.lap + d.length) && datum.lapNumber >= d.lap ? 1 : 0.1
     )
     elems.raise()
+    */
   }
   function mouseleave (event, d) {
     d3.selectAll('.tooltip').remove()
@@ -49,12 +51,6 @@ export default function () {
       d3.select('.linechart_container').select('.linechart').selectAll('#' + d.driver)
         .style('opacity', 0.1)
     }
-    /*
-    if (selectedDrivers.length === 0) {
-      d3.select('.linechart_container').select('.linechart').selectAll('#' + d.driver)
-        .style('opacity', 1)
-    }
-    */
   }
   function mousemove (event, d) {
     d3.select('.tooltip')
@@ -126,19 +122,7 @@ export default function () {
             .attr('height', yScale.bandwidth())
             .attr('width', d => xScale(d.length))
             .attr('id', d => d.driver)
-            .attr('fill', d => {
-              if (d.compound === 'SOFT') {
-                return 'red'
-              }
-              if (d.compound === 'MEDIUM') {
-                return 'yellow'
-              }
-              if (d.compound === 'INTERMEDIATE') {
-                return 'green'
-              }
-              if (d.compound === 'WET') return 'blue'
-              return 'white'
-            })
+            .attr('fill', d => compoundToColor(d.compound))
             .style('stroke', '#282828')
             .style('stroke-width', 2)
           )

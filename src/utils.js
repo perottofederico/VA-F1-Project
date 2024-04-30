@@ -1,6 +1,7 @@
 import * as d3 from 'd3'
 
 export const TR_TIME = 750
+export const EPSILON = 0.000001
 
 export function sentenceString (s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
@@ -64,6 +65,7 @@ export function getRacesList () {
   return list
 }
 
+// Hacky function to differentiate between first and second drivers of a team
 export function isSecondDriver (abbreviation) {
   const secondDrivers = ['ZHO', 'TSU', 'OCO', 'STR', 'SAI', 'MAG',
     'PIA', 'RUS', 'PER', 'SAR']
@@ -71,6 +73,7 @@ export function isSecondDriver (abbreviation) {
   else return false
 }
 
+// Convert an int representing the track status into a color hex
 export function trackStatusToColor (trackStatus) {
   switch (trackStatus % 10) {
     case 2: return d3.schemeSet1[5] // yellow for yellow flag
@@ -85,6 +88,8 @@ export function trackStatusToColor (trackStatus) {
     case 67: return 'white'
   }
 }
+
+// Convert an int representing the track status into a String
 export function trackStatusToString (trackStatus) {
   switch (trackStatus % 10) {
     case 2: return 'Yellow Flag' // yellow for yellow flag
@@ -92,14 +97,10 @@ export function trackStatusToString (trackStatus) {
     case 5: return 'Red Flag' // red for red flag
     case 6: return 'VSC' // white for VSC
     case 7: return 'VSC' // white for VSC (ending)
-    // This cases aren't considered, but could be done using a gradient
-    case 24: return d3.schemeSet1[4]
-    case 25: return d3.schemeSet1[0]
-    case 45: return d3.schemeSet1[0]
-    case 67: return 'white'
   }
 }
 
+// convert a 'compound' string into a color hex
 export function compoundToColor (compound) {
   switch (compound) {
     case 'SOFT': return '#ff2928'
@@ -109,32 +110,114 @@ export function compoundToColor (compound) {
     case 'WET': return '#018dd2'
   }
 }
+
 export function handleSelection () {
   const allDrivers = [...d3.select('.drivers_legend').select('g').selectAll('g')].map(driver => driver.id)
   // There's three different possible graphs that set the 'selected' status
   // drivers_legend
   const dlBounds = d3.select('.drivers_legend')
-  const dlSelection = dlBounds.selectAll('g[selected = true]')
+  const dlSelection = [...dlBounds.selectAll('g[selected = true]')]
+    .map(driver => driver.id)
   // parallel_coordinates
   const pcBounds = d3.select('.parallel_coordinates_container').select('.contents')
-  const pcSelection = pcBounds.selectAll('path[selected = true]')
+  const pcSelection = [...pcBounds.selectAll('path[selected = true]')]
+    .map(driver => driver.id)
   // stacked_barchart
 
-  //
-  const selected = [...dlSelection, ...pcSelection].map(driver => driver.id)
-  if (!selected.length) {
+  // Basically an AND of the two lists
+  const selected = pcSelection.filter(d => dlSelection.includes(d))
+
+  // Case for the default values of the 'selected' attribute
+  // The differing values are due to how i initialized the 'selected' attribute
+  // It's probably also redundant
+  if ((pcSelection.length === 20 && dlSelection.length === 0)) {
     allDrivers.forEach(driver => {
-      d3.selectAll('#' + driver).style('opacity', 1)
+      d3.select('.drivers_legend').selectAll('#' + driver).style('opacity', 1)
+        .style('pointer-events', 'bounding-box')
+      d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 1)
+        .style('pointer-events', 'all')
+    })
+  } else if (dlSelection.length && !pcSelection.length) {
+    // Case in which none of the drivers are selected in the parallel coordinates,
+    // but some have been selected in the drivers legend
+    // The way i set up the views and the default values of the elements,
+    // this rarely, if ever, gets called
+
+    // Set the opacity and status of elements outside the selection
+    allDrivers.filter(driver => !dlSelection.includes(driver)).forEach(elem => {
+      d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
+        .style('pointer-events', 'bounding-box')
+      d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
+      // .style('pointer-events', 'none')
+      d3.select('.parallel_coordinates_container').selectAll('#' + elem)
+        .attr('selected', 'false')
+
+      // Set the opacity and stats of elements inside the selection
+      dlSelection.forEach(elem => {
+        d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 1)
+          .style('pointer-events', 'bounding-box')
+        d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 1)
+          .style('pointer-events', 'all')
+        const status = d3.select('.drivers_legend').selectAll('#' + elem).attr('selected')
+        d3.select('.parallel_coordinates_container').selectAll('#' + elem)
+          .attr('selected', status === 'true' ? 'false' : 'true')
+      })
+    })
+  } else if (!dlSelection.length && pcSelection.length) {
+    // Case in which some drivers have been selected in the parallel_coordinates
+    // but none have been selected in the drivers_legend
+    // i.e. the case in which you interact with the parallel_coordinates first
+
+    // For all the drivers not part of the selection, reduce their opacity
+    // For the elements in drivers_legend, limit their interaction (TODO)
+    // for the others (rect, paths, etc), eliminate the ability to interact
+    allDrivers.filter(driver => !pcSelection.includes(driver)).forEach(elem => {
+      d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
+        .style('pointer-events', 'bounding-box')
+      d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
+        .style('pointer-events', 'none')
+    })
+
+    // For the drivers that are part of the selection, set their opacity to 1
+    // and allow interactions
+    pcSelection.forEach(driver => {
+      d3.select('.drivers_legend').selectAll('#' + driver).style('opacity', 1)
+        .style('pointer-events', 'bounding-box')
+      d3.select('.drivers_legend').selectAll('g#' + driver)
+      d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 1)
+        .style('pointer-events', 'all')
     })
   } else {
+    // This is essentially the case in which drivers_legend is interacted with first
+    // since parallel_coordinates starts with all values as selected
+
+    // For all the drivers that aren't part of both selection, decrease their opacity
+    // and remove/limit the interactions
     allDrivers.filter(driver => !selected.includes(driver)).forEach(elem => {
-      d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0.1)
       d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
+        .style('pointer-events', 'bounding-box')
+
+      d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
+        .style('pointer-events', 'none')
     })
+
+    // For all the drivers that are part of both selections, set the opacity to 1
+    // and allow interactions
     selected.forEach(elem => {
-      d3.selectAll('#' + elem).style('opacity', 1)
+      d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 1)
+        .style('pointer-events', 'bounding-box')
+      d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 1)
+        .style('pointer-events', 'all')
     })
   }
-  const set = new Set(selected)
-  // console.log(set)
+}
+
+// function to reset the values for the 'selected' attribute
+export function resetAllFilters () {
+  d3.select('.drivers_legend').select('g').selectAll('g')
+    .attr('selected', 'false')
+    .style('pointer-events', 'bounding-box')
+  d3.select('.parallel_coordinates_container').selectAll('path')
+    .attr('selected', 'true')
+  handleSelection()
 }

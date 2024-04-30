@@ -31,7 +31,7 @@ export default function () {
     }
   }
 
-  // Tutorials online use an existing div and just change its opacity, i wonder if its because of performance?
+  // Tutorials online use an existing div and just change its opacity and position, i wonder if its because of performance?
   function onPointEnter (e, d) {
     d3.select('#root')
       .append('div')
@@ -81,11 +81,13 @@ export default function () {
   // There's for sure a better way to do this (and the other views)
   function linechart (selection) {
     selection.each(function () {
-      // Group the data based on the driver
+      // Group the data based on the driver and compute the deltas
       const groupedData = d3.group(data.data, d => d.driver)
       data.computeDeltas(groupedData)
-      // the results are ordered in finishing order, so the winner will be at index 0
+
+      // the 'results' data are ordered in finishing order, so the winner will be at index 0
       const winner = results.data[0].Abbreviation
+
       //
       const xScale = d3.scaleLinear()
         .domain(d3.extent(data.data, xAccessor))
@@ -93,8 +95,8 @@ export default function () {
       const yScale = d3.scaleLinear()
         .domain(d3.extent(data.data, yAccessor))
         .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
-      // I need (i think) this copy as a point of reference for the zoom behaviour
-      const yScaleCopy = yScale.copy()
+      // I need this copy as a point of reference for the zoom behaviour
+      let yScaleCopy = yScale.copy()
 
       //
       xAxisContainer
@@ -103,14 +105,6 @@ export default function () {
       yAxisContainer
         .transition().duration(TR_TIME)
         .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
-
-      clip = bounds.append('defs').append('clipPath')
-        .attr('id', 'clip')
-        .append('rect')
-        .attr('width', dimensions.width - dimensions.margin.right)
-        .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
-        .attr('x', 0)
-        .attr('y', -5)
 
       const zoom = d3.zoom()
         .extent([[0, 0], [dimensions.width, dimensions.height]])
@@ -136,8 +130,9 @@ export default function () {
         //
         let trackStatuses = [...new Set(groupedData.get(winner).filter(lap => lap.trackStatus !== 1).map(d => d.trackStatus % 10))]
         // This takes care of an edge case
-        // trackStatus = 7 means VSC ending, but usually i already have the number for VSC (6) in the data
-        // so, if both numbers are present, i get two VSCs in the legend, so i need to remove one of them
+        // trackStatus = 7 means VSC ending, but usually (not always) i already have the number for VSC (6) in the data
+        // and so, if both numbers are present, i get two VSCs in the legend
+        // Therefore i need to remove one of them
         // there's probably a cleaner way to do this but i can't think of it right now
         if (trackStatuses.includes(6)) {
           trackStatuses = trackStatuses.filter(d => d !== 7)
@@ -147,8 +142,8 @@ export default function () {
           .join(enterLegend, updateLegend, exitLegend)
 
         // Add grid lines to the chart
-        // I tried to do this differently (not enter-update-exit first &
-        // using only one set of functions later) but i couldnt do it,
+        // I tried to do this differently (not enter-update-exit at first &
+        // using only one set of functions later) but i couldnt make it work,
         // and this works fine so i'm keeping it
         // xGridlines
         xGridContainer.selectAll('.x-grid-lines')
@@ -176,8 +171,10 @@ export default function () {
           .data((data.data).filter(d => isSecondDriver(d.driver)))
           .join(enterSquare, updateSquare, exitSquare)
 
-        // I either lower the track status rectangles' opacity
-        // or I do this to put the rectangles in the back
+        // after updating, some elements ended up behind new elements (i.e. new rectangles)
+        // this re-inserts each selected element, in order, as the first child of its parent
+        // i.e. it puts the track status rectangles in the background.
+        // another solution could be to lower the opacity
         bounds.selectAll('.trackStatus').lower()
       }
       dataJoin()
@@ -309,14 +306,9 @@ export default function () {
             .attr('cx', d => xScale(d.lapNumber))
             .attr('cy', d => yScale(d.delta))
             .attr('r', dimensions.width / 360)
-            .attr('stroke', d => getTeamColor(d.team))
             .attr('fill', d => getTeamColor(d.team))
             .attr('id', d => d.driver)
           )
-          // after updating, some circles ended up behind new elements such as rectangles
-          // this re-inserts each selected element, in order, as the last child of its parent
-          // but kinda breaks the transition :c
-          .raise()
       }
       function exitCircleFn (sel) {
         return sel.call(exit => exit.remove())
@@ -396,7 +388,8 @@ export default function () {
       function exitLegend (sel) {
         sel.call(exit => exit.remove())
       }
-      // Update function to handle zooming without transitions, as the duration makes zooming feel sluggish
+
+      // Update function without transitions to handle zooming, as the duration makes zooming feel sluggish
       function updateNoTr () {
         xGridContainer.selectAll('.x-grid-lines')
           .call(update => update
@@ -405,6 +398,23 @@ export default function () {
             .attr('y1', 0)
             .attr('y2', dimensions.height - dimensions.margin.top - dimensions.margin.bottom)
           )
+
+        yGridContainer.selectAll('.y-grid-lines')
+          .data(yScale.ticks())
+          .join(
+            enter => enter.append('line')
+              .attr('class', 'y-grid-lines')
+              .attr('x1', 0)
+              .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+              .attr('y1', d => yScale(d))
+              .attr('y2', d => yScale(d)),
+            update => update
+              .attr('x1', 0)
+              .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+              .attr('y1', d => yScale(d))
+              .attr('y2', d => yScale(d)),
+            exitYGrid)
+
         yGridContainer.selectAll('.y-grid-lines')
           .call(update => update
             .attr('x1', 0)
@@ -412,6 +422,7 @@ export default function () {
             .attr('y1', d => yScale(d))
             .attr('y2', d => yScale(d))
           )
+
         bounds.selectAll('path')
           .call(update => update
             .attr('d', d3.line()
@@ -464,13 +475,15 @@ export default function () {
 
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
+
         svg.attr('width', dimensions.width)
+
         title.transition().duration(TR_TIME)
           .attr('x', dimensions.width / 2)
 
         xAxisContainer.transition().duration(TR_TIME)
           .call(d3.axisBottom(xScale))
-        svg.call(zoom)
+
         clip
           .attr('width', dimensions.width - dimensions.margin.right)
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
@@ -480,17 +493,22 @@ export default function () {
 
       updateHeight = function () {
         yScale.range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
-        svg
-          .attr('height', dimensions.height)
+
+        svg.attr('height', dimensions.height)
+
         xAxisContainer
           .transition()
           .duration(TR_TIME)
           .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
+
         yAxisContainer
           .transition()
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+
+        yScaleCopy = yScale.copy()
         svg.call(zoom)
+
         clip
           .attr('width', dimensions.width - dimensions.margin.right)
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
@@ -542,6 +560,14 @@ export default function () {
       .attr('class', 'contents')
       .attr('clip-path', 'url(#clip)')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
+
+    clip = bounds.append('defs').append('clipPath')
+      .attr('id', 'clip')
+      .append('rect')
+      .attr('width', dimensions.width - dimensions.margin.right)
+      .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
+      .attr('x', 0)
+      .attr('y', -5)
 
     xAxisContainer = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)

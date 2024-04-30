@@ -20,95 +20,9 @@ export default function () {
     }
   }
 
-  /*
-  let selectedDrivers = []
-  function onEnter (e, d) {
-    // get all the drivers that aren't selected & aren't being hovered
-    const driversList = data.data.map(driver => driver.Abbreviation)
-      .filter(driver => driver !== d.Abbreviation)
-      .filter(elem => !selectedDrivers.includes(elem))
-    // for those drivers, set the opacity low
-    driversList.forEach(driver => {
-      d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 0.1)
-      d3.selectAll('.contents').selectAll('#' + d.Abbreviation).raise()
-    })
-    // for the current element, set the opacity high
-    d3.selectAll('#' + d.Abbreviation).style('opacity', 1)
-  }
-
-  //
-  function onClick (e, d) {
-    // If the driver is already selected, un-select him
-    if (selectedDrivers.includes(d.Abbreviation)) {
-      // remove driver from array
-      selectedDrivers = selectedDrivers.filter(e => e !== d.Abbreviation)
-      // change his status
-      d3.select('.drivers_legend').selectAll('#' + d.Abbreviation).attr('selected', 'false')
-    } else {
-      // Add the clicked driver to selectedDrivers array
-      selectedDrivers.push(d.Abbreviation)
-      // change the selected status after click
-      d3.select('.drivers_legend').selectAll('#' + d.Abbreviation).attr('selected', 'true')
-      d3.selectAll('#' + d.Abbreviation).style('opacity', 1)
-        .style('pointer-events', 'all')
-    }
-    // get all the drivers that aren't selected
-    const driversList = data.data.map(elem => elem.Abbreviation)
-      .filter(elem => !selectedDrivers.includes(elem))
-    // for those drivers, set the opacity
-    driversList.forEach(driver => {
-      // in the drivers_legend it's a bit more vivid
-      d3.select('.drivers_legend').selectAll('#' + driver).style('opacity', 0.5)
-      d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 0.1)
-      // remove pointer events from non selected drivers
-        .style('pointer-events', 'none')
-    })
-    // If there are no more drivers selected
-    if (selectedDrivers.length === 0) {
-      const driversList = data.data.map(elem => elem.Abbreviation)
-      driversList.forEach(driver => {
-        d3.selectAll('#' + driver)
-          .style('opacity', 1)
-          .style('pointer-events', 'all')
-      })
-    }
-  }
-
-  //
-  function onLeave (e, d) {
-    if (selectedDrivers.length === 0) {
-      const driversList = data.data.map(elem => elem.Abbreviation)
-      driversList.forEach(driver => {
-        d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 1)
-      })
-    } else {
-      const selected = d3.select('.drivers_legend').select('#' + d.Abbreviation).attr('selected')
-      d3.select('.drivers_legend').selectAll('#' + d.Abbreviation).style('opacity', selected === 'true' ? 1 : 0.5)
-      d3.selectAll('.contents').selectAll('#' + d.Abbreviation).style('opacity', selected === 'true' ? 1 : 0.1)
-    }
-  }
-*/
   function onEnter (e, d) {
     d3.selectAll('#' + d.Abbreviation).style('opacity', 1)
-    const dlSelection = data.data.map(driver => driver.Abbreviation)
-      .filter(driver => driver !== d.Abbreviation)
-      .filter(driver =>
-        d3.select('.drivers_legend').select('#' + driver).attr('selected') !== 'true'
-      )
-    const pcSelection =
-        d3.select('.parallel_coordinates_container').select('.contents').selectAll('path[selected = false]')
-
-    // I have to do it like this because i decided to exclude drivers who didn't complete a racing lap to
-    // avoid the scale in the parallel coordinates being too skewed, but this also means that sometimes
-    // a driver isn't included in the parallel coordinates, so i can't filter them directly and have to rely
-    // on a separate selection and filter afterwards based on its contents :)))
-    dlSelection.filter(driver => ![...pcSelection].includes(driver))
-      .forEach(d => {
-        d3.select('.drivers_legend').selectAll('#' + d).style('opacity', 0.5)
-        d3.selectAll('.contents').selectAll('#' + d).style('opacity', 0.1)
-      })
   }
-
   function onClick (e, d) {
     const driverClicked = d3.select('.drivers_legend').select('#' + d.Abbreviation)
     if (driverClicked.attr('selected') === 'true') {
@@ -118,19 +32,9 @@ export default function () {
     }
     handleSelection()
   }
-
   function onLeave (e, d) {
-    const selectedList = d3.select('.drivers_legend').selectAll('g[selected = true]')
-    if (selectedList.size() === 0) {
-      // This is again to handle an edge case, these interactions are making me lose my mind
-      handleSelection()
-    } else {
-      const selected = d3.select('.drivers_legend').select('#' + d.Abbreviation).attr('selected')
-      d3.select('.drivers_legend').select('#' + d.Abbreviation).style('opacity', selected === 'true' ? 1 : 0.5)
-      d3.selectAll('.contents').selectAll('#' + d.Abbreviation).style('opacity', selected === 'true' ? 1 : 0.1)
-    }
+    handleSelection()
   }
-
   function drivers_legend (selection) {
     selection.each(function () {
       function dataJoin () {
@@ -145,9 +49,9 @@ export default function () {
           .attr('id', d => d.Abbreviation)
           .attr('selected', 'false')
           .style('pointer-events', 'bounding-box') // this might not work outside of chrome, may need to append an invisible rect
-          .on('click', (e, d) => onClick(e, d))
-          .on('mouseenter', (e, d) => onEnter(e, d))
-          .on('mouseleave', (e, d) => onLeave(e, d))
+          .on('click', onClick)
+          .on('mouseenter', onEnter)
+          .on('mouseleave', onLeave)
 
         p.append('text')
           .attr('id', d => d.Abbreviation)
@@ -232,7 +136,6 @@ export default function () {
       updateWidth = function () {
         title.transition().duration(TR_TIME)
           .attr('x', dimensions.width / 2)
-        // dataJoin()
       }
       updateHeight = function () {
         svg

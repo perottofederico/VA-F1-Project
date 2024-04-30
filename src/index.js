@@ -2,7 +2,7 @@ import 'normalize.css'
 import * as d3 from 'd3'
 import './index.scss'
 import controller from './controller'
-import { formatLap, formatPitStop, getRacesList } from './utils'
+import { formatLap, formatPitStop, getRacesList, resetAllFilters } from './utils'
 
 async function init () {
   window.d3 = d3
@@ -13,9 +13,6 @@ async function init () {
 
   // Wait for data to be loaded
   await updateData()
-
-  // Populate views
-  // populateViews()
 
   // Window resize listener
   window.addEventListener('resize', _ => {
@@ -123,6 +120,8 @@ async function updateData () {
     console.error('Error updating data\n', e)
   }
   controller.handleRaceChanged()
+
+  resetAllFilters()
   populateViews()
 }
 

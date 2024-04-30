@@ -97,14 +97,15 @@ export default function () {
             .attr('y', d => yScale(parseFloat(d.PC2)) - 5)
           )
       }
-      function exitSquareFn (sel) {}
+      function exitSquareFn (sel) {
+        return sel.call(exit => exit
+          .remove())
+      }
 
       // Atm it's not being used but could be useful so i'm keeping it
       updateData = function () {
         xScale.domain(d3.extent(data.data, xAccessor))
-        // xScale.domain(d3.extent(data.lapsCount))
         yScale.domain(d3.extent(data.data, yAccessor))
-        // yScale.domain(d3.extent(data.lapTimesMs))
         xAxisContainer
           .transition()
           .duration(TR_TIME)
