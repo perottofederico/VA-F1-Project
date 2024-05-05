@@ -36,8 +36,12 @@ export default function () {
         .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
 
       //
-      xAxisContainer.call(d3.axisBottom(xScale))
-      yAxisContainer.call(d3.axisLeft(yScale))
+      xAxisContainer
+        .attr('transform', `translate(${dimensions.margin.left}, ${yScale(0) + dimensions.margin.top})`)
+        .call(d3.axisBottom(xScale))
+      yAxisContainer
+        .attr('transform', `translate(${xScale(0) + dimensions.margin.left}, ${dimensions.margin.top})`)
+        .call(d3.axisLeft(yScale))
 
       //
       function dataJoin () {
@@ -109,6 +113,7 @@ export default function () {
         xAxisContainer
           .transition()
           .duration(TR_TIME)
+          .attr('transform', `translate(${dimensions.margin.left}, ${yScale(0) + dimensions.margin.top})`)
           .call(d3.axisBottom(xScale))
         yAxisContainer
           .transition()
@@ -148,7 +153,7 @@ export default function () {
           .transition()
           .duration(TR_TIME)
         // .call(d3.axisBottom(xScale))
-          .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height / 2})`)
+          .attr('transform', `translate(${dimensions.margin.left}, ${yScale(0) + dimensions.margin.top})`)
 
         yAxisContainer
           .transition()

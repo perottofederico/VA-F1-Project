@@ -76,16 +76,11 @@ export function isSecondDriver (abbreviation) {
 // Convert an int representing the track status into a color hex
 export function trackStatusToColor (trackStatus) {
   switch (trackStatus % 10) {
-    case 2: return d3.schemeSet1[5] // yellow for yellow flag
-    case 4: return d3.schemeSet1[4] // orange for safety car
-    case 5: return d3.schemeSet1[0] // red for red flag
-    case 6: return 'white' // white for VSC
-    case 7: return 'white' // white for VSC (ending)
-      // This cases aren't considered, but could be done using a gradient
-    case 24: return d3.schemeSet1[4]
-    case 25: return d3.schemeSet1[0]
-    case 45: return d3.schemeSet1[0]
-    case 67: return 'white'
+    case 2: return d3.schemeSet3[11] // yellow for yellow flag
+    case 4: return d3.schemeSet3[5] // orange for safety car
+    case 5: return d3.schemeSet3[3] // red for red flag
+    case 6: return d3.schemeSet3[1] // white for VSC
+    case 7: return d3.schemeSet3[1] // white for VSC (ending)
   }
 }
 
@@ -111,6 +106,20 @@ export function compoundToColor (compound) {
   }
 }
 
+//
+export function getContextualData (axis, driver) {
+  switch (axis) {
+    case 'AvgLaptime': return 'Avg Laptime ' + d3.timeFormat('%M:%S.%L')(driver[axis])
+    case 'LaptimeConsistency': return 'Consistency: ' + driver[axis].toFixed(2) + '%'
+    case 'PitStopTime': return 'Total Pitstop Time: ' + driver[axis] + ' s'
+    case 'AvgSpeed': return 'Average Speed: ' + driver[axis] + ' km/h'
+    case 'PositionsGained': return 'Started ' + driver.startingPos +
+    '<br>Finished ' + driver.finishingPos +
+    '<br>Positions Gained: ' + driver.PositionsGained
+  }
+}
+
+// Function to handle multiple selections
 export function handleSelection () {
   const allDrivers = [...d3.select('.drivers_legend').select('g').selectAll('g')].map(driver => driver.id)
   // There's three different possible graphs that set the 'selected' status
@@ -126,7 +135,7 @@ export function handleSelection () {
 
   // Basically an AND of the two lists
   const selected = pcSelection.filter(d => dlSelection.includes(d))
-
+  console.log(dlSelection, pcSelection, selected)
   // Case for the default values of the 'selected' attribute
   // The differing values are due to how i initialized the 'selected' attribute
   // It's probably also redundant
@@ -217,6 +226,9 @@ export function resetAllFilters () {
   d3.select('.drivers_legend').select('g').selectAll('g')
     .attr('selected', 'false')
     .style('pointer-events', 'bounding-box')
+  // if there are zoom buttons, use them to reset the zoom
+  d3.selectAll('.resetZoomButton').dispatch('click')
+
   d3.select('.parallel_coordinates_container').selectAll('path')
     .attr('selected', 'true')
   handleSelection()

@@ -38,9 +38,11 @@ export default function () {
       .attr('class', 'tooltip')
       .text('Driver: ' + d.driver + ' \nDelta: ' + (d.delta / 1000) + 's')
 
+    /*
     d3.selectAll('circle')
       .filter((d, i) => (d !== e.target.__data__)) // There's no way this is the best way to do this lol
       .attr('opacity', 0.2)
+    */
 
     // DO it better for the love of god
     const id = (d3.select(`#${d.driver}`)) // gets the path i want to highlight

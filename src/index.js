@@ -25,17 +25,25 @@ function setupPage () {
   const list = getRacesList()
   const menuContainer = d3.select('#root').append('div')
     .attr('class', 'header')
-    .html('Select a race: ')
+
+  const selectMenu = menuContainer.html('Select a race: ')
     .style('font-size', '20px')
     .append('select')
     .attr('id', 'selectButton')
     .attr('class', 'selection')
     .on('change', () => updateData())
-  menuContainer.selectAll('option')
+  selectMenu.selectAll('option')
     .data(list).enter()
     .append('option')
     .attr('value', d => d)
     .text(d => d.replace('_', ': '))
+
+  const resetFiltersBtn = menuContainer.append('button')
+    .style('left', '100px')
+    .style('position', 'relative')
+    .text('Reset All Filters')
+    .style('font-size', '16px')
+    .on('click', resetAllFilters)
 
   // Containers for views
   const linechartContainer = d3.select('#root').append('div')

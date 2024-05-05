@@ -1,5 +1,8 @@
 import * as d3 from 'd3'
-import { EPSILON, TR_TIME, getTeamColor, isSecondDriver, handleSelection } from '../utils'
+import {
+  EPSILON, TR_TIME, getTeamColor, isSecondDriver,
+  handleSelection, getContextualData
+} from '../utils'
 
 export default function () {
   let laps = []
@@ -19,9 +22,67 @@ export default function () {
     margin: {
       top: 70,
       right: 50,
-      bottom: 20,
+      bottom: 50,
       left: 80
     }
+  }
+
+  function mouseMove (event, d) {
+    const [x, y] = d3.pointer(event, this)
+    const circles = bounds.selectAll('circle[axis=' + d + ']')
+    circles.each(elem => {
+      const circle = bounds.select('circle#' + elem.driver + '[axis =' + d + ']')
+      const cy = parseFloat(circle.attr('cy'))
+      const radius = parseFloat(circle.attr('r')) // its always 5
+      const opacity = parseFloat(circle.style('opacity'))
+      if (x >= -radius && x <= radius && y >= cy - radius && y <= cy + radius && opacity === 1) {
+        if (d3.select('.tooltip').empty()) {
+          d3.select('#root')
+            .append('div')
+            .attr('class', 'tooltip')
+            .attr('id', elem.driver)
+            .style('border', 'solid')
+            .style('border-width', '3px')
+            .style('left', event.x + 5 + 'px')
+            .style('top', event.y - 50 + 'px')
+            .style('border-color', getTeamColor(elem.team))
+            .html(elem.driver +
+              '<br> ' + getContextualData(d, elem))
+        }
+      } else {
+        d3.selectAll('.tooltip#' + elem.driver).remove()
+      }
+    })
+
+    const squares = bounds.selectAll('rect[axis=' + d + ']')
+    squares.each(elem => {
+      const square = bounds.select('rect#' + elem.driver + '[axis =' + d + ']')
+      const squareY = parseFloat(square.attr('y'))
+      const width = parseFloat(square.attr('width'))
+      const height = parseFloat(square.attr('height'))// always 10
+      const opacity = parseFloat(square.style('opacity'))
+      if (x >= -width / 2 && x <= width / 2 && y >= squareY && y <= squareY + height && opacity === 1) {
+        if (d3.select('.tooltip').empty()) {
+          d3.select('#root')
+            .append('div')
+            .attr('class', 'tooltip')
+            .attr('id', elem.driver)
+            .style('border', 'dashed')
+            .style('border-width', '3px')
+            .style('left', event.x + 5 + 'px')
+            .style('top', event.y - 50 + 'px')
+            .style('border-color', getTeamColor(elem.team))
+            .html(elem.driver +
+              '<br> ' + getContextualData(d, elem))
+        }
+      } else {
+        d3.selectAll('.tooltip#' + elem.driver).remove()
+      }
+    })
+  }
+
+  function mouseLeave () {
+    d3.selectAll('.tooltip').remove()
   }
 
   function parallel_coordinates (selection) {
@@ -65,7 +126,9 @@ export default function () {
             LaptimeConsistency: lapsMetrics.laptimeConsistency,
             PitStopTime: pitStopsMetrics,
             AvgSpeed: 0,
-            PositionsGained: resultsMetrics
+            startingPos: resultsMetrics.startingPos,
+            finishingPos: resultsMetrics.finishingPos,
+            PositionsGained: resultsMetrics.result
           })
         }
       })
@@ -97,11 +160,16 @@ export default function () {
         .domain(metrics)
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
 
+      //
+      const line = d3.line()
+        .x(([metric]) => xScale(metric))
+        .y(([metric, value]) => yScales[metric](value))
+
       // Create brush behaviour
       const selections = new Map()
       const brush = d3.brushY()
         // maybe add a little extra on the height for clarity
-        .extent([[-45, -5], [45, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
+        .extent([[-25, -5], [25, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
         .on('end', brushZoom)
 
       // This version of the brushing function only really highlighted the
@@ -194,11 +262,36 @@ export default function () {
             .filter(d => d === key)
             .transition().duration(TR_TIME)
             .call(brush.move, null)
+
+          // Add a 'button' to reset zoom, only if there isn't one already for this axis
+          if (d3.select('g#' + key).empty()) {
+            const g = svg.append('g')
+              .attr('id', key)
+              .attr('class', 'resetZoomButton')
+              .style('pointer-events', 'all')
+              .on('click', () => resetZoom(key))
+
+            g.append('rect')
+              .attr('x', xScale(key) + dimensions.margin.left - 40)
+              .attr('y', dimensions.height - dimensions.margin.bottom + 15)
+              .attr('height', 20)
+              .attr('width', 80)
+              .style('fill', 'none')
+              .style('stroke', '#ffffff')
+
+            g.append('text')
+              .attr('x', xScale(key) + dimensions.margin.left)
+              .attr('y', dimensions.height - 20)
+              .text('Reset zoom')
+              .style('fill', '#ffffff')
+              .style('font-size', 14)
+              .style('text-anchor', 'middle')
+          }
         }
       }
 
       // function to reset the zoom (domain) of an axis
-      function resetZoom (event, key) {
+      function resetZoom (key) {
         const scale = yScales[key]
 
         if (key === 'AvgLaptime' || key === 'PitStopTime') {
@@ -221,11 +314,15 @@ export default function () {
           })
           bounds.select('#' + driver.driver)
             .attr('selected', selected ? 'true' : 'false')
+            /*
+          d3.select('.drivers_legend').selectAll('#' + driver.driver)
+            .attr('selected', selected ? 'false' : 'true')
+          */
         })
         // call an outside function to handle setting the opacity and interactivity
         handleSelection()
 
-        // see brushZoom
+        // see brushZoom explanation
         svg.selectAll('.parallelCoordinates_yAxisContainer')
           .filter(d => d === key)
           .each(function (d) {
@@ -239,6 +336,10 @@ export default function () {
                 .call(d3.axisLeft().scale(yScales[d]).tickValues(yScales[d].ticks().concat(yScales[d].domain())))
             }
           })
+
+        // Remove the button
+        d3.selectAll('#' + key + '.resetZoomButton').remove()
+
         dataJoin()
       }
 
@@ -253,23 +354,25 @@ export default function () {
             d3.select(this).call(d3.axisLeft().scale(yScales[d]).tickValues(yScales[d].ticks().concat(yScales[d].domain())))
           }
           // Add brushing to axes
-          d3.select(this).call(brush)
-            .on('dblclick', resetZoom)
+          d3.select(this)
+          // because of brush i put function here test
+            .on('mousemove', mouseMove)
+            .on('mouseleave', mouseLeave)
+            .on('dblclick', () => resetZoom(d)) // why do i have to do () => ??
+            .call(brush)
         })
 
       //
-      const line = d3.line()
-        .x(([metric]) => xScale(metric))
-        .y(([metric, value]) => yScales[metric](value))
-
-      //
       function dataJoin () {
-        bounds.selectAll('path')
+        bounds.selectAll('g')
           .data(graphData, d => d.driver)
-          .join(enterLine, updateLine, exitLine)
+          .join(enter, update, exit)
       }
-      function enterLine (sel) {
-        return sel.append('path')
+      function enter (sel) {
+        const p = sel.append('g')
+          .attr('id', d => d.Abbreviation)
+
+        p.append('path')
           .attr('fill', 'none')
           .attr('id', d => d.driver)
           .attr('stroke', d => getTeamColor(d.team))
@@ -277,15 +380,54 @@ export default function () {
           .attr('class', d => isSecondDriver(d.driver) ? 'dashed' : '')
           .attr('selected', 'true')
           .attr('d', d => line(d3.cross(metrics, [d], (metric, d) => [metric, d[metric]])))
-      }
-      function updateLine (sel) {
-        return sel
-          .call(update => update.transition().duration(TR_TIME)
-            .attr('d', d => line(d3.cross(metrics, [d], (metric, d) => [metric, d[metric]])))
+
+        metrics.forEach(metric => {
+          p.filter(d => !isSecondDriver(d.driver)).append('circle')
+            .attr('cx', xScale(metric))
+            .attr('cy', d => yScales[metric](d[metric]))
+            .attr('r', 5)
+            .attr('axis', metric)
+            .attr('fill', d => getTeamColor(d.team))
             .attr('id', d => d.driver)
-          )
+            .style('stroke-width', '1px')
+            .style('stroke', '#282828')
+            .style('pointer-events', 'all')
+
+          p.filter(d => isSecondDriver(d.driver)).append('rect')
+            .attr('class', 'square')
+            .attr('x', xScale(metric) - 5)
+            .attr('y', d => yScales[metric](d[metric]) - 5)
+            .attr('width', 10) // maybe change this ratio
+            .attr('height', 10)
+            .attr('axis', metric)
+            .attr('fill', d => getTeamColor(d.team))
+            .attr('id', d => d.driver)
+            .style('stroke-width', '1px')
+            .style('stroke', '#282828')
+        })
       }
-      function exitLine (sel) {
+      function update (sel) {
+        sel.attr('id', d => d.Abbreviation)
+        const path = sel.select('path')
+        path.call(update => update.transition().duration(TR_TIME)
+          .attr('d', d => line(d3.cross(metrics, [d], (metric, d) => [metric, d[metric]])))
+          .attr('id', d => d.driver)
+        )
+        metrics.forEach(metric => {
+          const circle = sel.select('circle[axis = ' + metric)
+          circle.call(update => update.transition().duration(TR_TIME)
+            .attr('cx', xScale(metric))
+            .attr('cy', d => yScales[metric](d[metric]))
+          )
+
+          const square = sel.select('rect[axis = ' + metric)
+          square.call(update => update.transition().duration(TR_TIME)
+            .attr('x', xScale(metric) - 5)
+            .attr('y', d => yScales[metric](d[metric]) - 5)
+          )
+        })
+      }
+      function exit (sel) {
         sel.call(exit => exit
           // .transition()
           // .duration(TR_TIME)
@@ -333,9 +475,21 @@ export default function () {
               .call(brush)
           })
 
+        d3.selectAll('.resetZoomButton')
+          .each(function () {
+            const metric = d3.select(this).attr('id')
+            d3.select(this).select('rect')
+              .transition().duration(TR_TIME)
+              .attr('x', xScale(metric) + dimensions.margin.left - 40)
+            d3.select(this).select('text')
+              .transition().duration(TR_TIME)
+              .attr('x', xScale(metric) + dimensions.margin.left)
+          })
+
         d3.select('.clip2').select('rect')
           .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left)
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
+
         dataJoin()
       }
       updateHeight = function () {
@@ -352,8 +506,18 @@ export default function () {
         svg.attr('height', dimensions.height)
 
         clip
-          .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+          .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left + 10)
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 10)
+
+        d3.selectAll('.resetZoomButton')
+          .each(function () {
+            d3.select(this).select('rect')
+              .transition().duration(TR_TIME)
+              .attr('y', dimensions.height - dimensions.margin.bottom + 15)
+            d3.select(this).select('text')
+              .transition().duration(TR_TIME)
+              .attr('y', dimensions.height - 20)
+          })
 
         brush.extent([[-45, -5], [45, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
         d3.selectAll('.parallelCoordinates_yAxisContainer')
@@ -438,9 +602,9 @@ export default function () {
     clip = bounds.append('defs').append('clipPath')
       .attr('id', 'clip2')
       .append('rect')
-      .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left)
+      .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left + 10)
       .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 10)
-      .attr('x', 0)
+      .attr('x', -5)
       .attr('y', -5)
 
     const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']

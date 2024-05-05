@@ -22,12 +22,13 @@ export default function () {
       left: 40
     }
   }
+
   function mouseover (event, d) {
     d3.select('#root')
       .append('div')
       .attr('class', 'tooltip')
       .html('Stint ' + d.stint + '<br> Laps: ' +
-      d.lap + ' to ' + (d.lap + d.length) +
+      (d.lap + 1) + ' to ' + (d.lap + d.length) +
       '<br> Compound: ' + d.compound)
 
     // Highlight corresponding laps in linechart

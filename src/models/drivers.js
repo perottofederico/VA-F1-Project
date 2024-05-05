@@ -14,12 +14,16 @@ class Drivers {
   //
   computeMetrics (lastName) {
     let result = 0
+    let startingPos = 0
+    let finishingPos = 0
     this.data.forEach(d => {
       if (d.LastName === lastName) {
-        result = d.GridPosition - d.Position // If i put the return here it doesn't work
+        startingPos = parseInt(d.GridPosition)
+        finishingPos = parseInt(d.Position)
+        result = d.GridPosition - d.Position
       }
     })
-    return result
+    return { startingPos, finishingPos, result }
   }
 
   getTeam (abbreviation) {

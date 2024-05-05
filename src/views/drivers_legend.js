@@ -22,6 +22,7 @@ export default function () {
 
   function onEnter (e, d) {
     d3.selectAll('#' + d.Abbreviation).style('opacity', 1)
+      .style('cursor', 'pointer')
   }
   function onClick (e, d) {
     const driverClicked = d3.select('.drivers_legend').select('#' + d.Abbreviation)
