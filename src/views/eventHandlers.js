@@ -7,7 +7,6 @@ export function onEnter (e, d) {
 }
 export function onClick (e, d) {
   const driverClicked = d3.select('.drivers_legend').select('#' + d.Abbreviation)
-  console.log(d.Abbreviation)
   if (driverClicked.attr('selected') === 'true') {
     driverClicked.attr('selected', 'false')
   } else {

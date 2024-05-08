@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-
+import { onClick } from './views/eventHandlers'
 export const TR_TIME = 750
 export const EPSILON = 0.000001
 
@@ -12,7 +12,7 @@ export function formatLap (entry) {
     driver: entry.Driver,
     driverNumber: entry.DriverNumber,
     lapNumber: entry.LapNumber,
-    lapTime: entry.LapTime,
+    lapTime: entry.LapTime, // .slice(10, -3),
     stint: entry.Stint,
     pitOutTime: entry.PitOutTime,
     pitInTime: entry.PitInTime,
@@ -122,6 +122,7 @@ export function getContextualData (axis, driver) {
 // Function to handle multiple selections
 export function handleSelection () {
   const allDrivers = [...d3.select('.drivers_legend').select('g').selectAll('g')].map(driver => driver.id)
+  const totalDrivers = allDrivers.length
   // There's three different possible graphs that set the 'selected' status
   // drivers_legend
   const dlBounds = d3.select('.drivers_legend')
@@ -135,52 +136,50 @@ export function handleSelection () {
 
   // Basically an AND of the two lists
   const selected = pcSelection.filter(d => dlSelection.includes(d))
-  console.log(dlSelection, pcSelection, selected)
+  // console.log(dlSelection, pcSelection, selected)
+
   // Case for the default values of the 'selected' attribute
-  // The differing values are due to how i initialized the 'selected' attribute
-  // It's probably also redundant
-  if ((pcSelection.length === 20 && dlSelection.length === 0)) {
+  // It's probably redundant
+  if (dlSelection.length === totalDrivers && pcSelection.length === totalDrivers) {
+    // console.log('full selection')
     allDrivers.forEach(driver => {
       d3.select('.drivers_legend').selectAll('#' + driver).style('opacity', 1)
         .style('pointer-events', 'bounding-box')
+      d3.select('.drivers_legend').selectAll('g#' + driver).on('click', onClick)
       d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 1)
         .style('pointer-events', 'all')
     })
-  } else if (dlSelection.length && !pcSelection.length) {
-    // Case in which none of the drivers are selected in the parallel coordinates,
-    // but some have been selected in the drivers legend
-    // The way i set up the views and the default values of the elements,
-    // this rarely, if ever, gets called
+  } else if (dlSelection.length === totalDrivers && !(pcSelection.length === totalDrivers)) {
+    // Case in which the first interaction happens in the parallel_coordinates
 
+    console.log('pcSelection')
     // Set the opacity and status of elements outside the selection
-    allDrivers.filter(driver => !dlSelection.includes(driver)).forEach(elem => {
-      d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
+    allDrivers.filter(driver => !pcSelection.includes(driver)).forEach(elem => {
+      d3.select('.drivers_legend').selectAll('#' + elem)
+        .style('opacity', 0.5)
         .style('pointer-events', 'bounding-box')
+      d3.select('.drivers_legend').selectAll('g#' + elem).on('click', null)
       d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
-      // .style('pointer-events', 'none')
-      d3.select('.parallel_coordinates_container').selectAll('#' + elem)
-        .attr('selected', 'false')
+        .style('pointer-events', 'none')
 
       // Set the opacity and stats of elements inside the selection
-      dlSelection.forEach(elem => {
-        d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 1)
+      pcSelection.forEach(elem => {
+        d3.select('.drivers_legend').selectAll('#' + elem)
+          .attr('selected', 'true')
+          .style('opacity', 1)
           .style('pointer-events', 'bounding-box')
+        d3.select('.drivers_legend').selectAll('g#' + elem).on('click', onClick)
         d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 1)
           .style('pointer-events', 'all')
-        const status = d3.select('.drivers_legend').selectAll('#' + elem).attr('selected')
-        d3.select('.parallel_coordinates_container').selectAll('#' + elem)
-          .attr('selected', status === 'true' ? 'false' : 'true')
       })
     })
-  } else if (!dlSelection.length && pcSelection.length) {
-    // Case in which some drivers have been selected in the parallel_coordinates
-    // but none have been selected in the drivers_legend
-    // i.e. the case in which you interact with the parallel_coordinates first
+  } else if (!(dlSelection.length === totalDrivers) && pcSelection.length === totalDrivers) {
+    // Case in which
 
     // For all the drivers not part of the selection, reduce their opacity
     // For the elements in drivers_legend, limit their interaction (TODO)
     // for the others (rect, paths, etc), eliminate the ability to interact
-    allDrivers.filter(driver => !pcSelection.includes(driver)).forEach(elem => {
+    allDrivers.filter(driver => !dlSelection.includes(driver)).forEach(elem => {
       d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
         .style('pointer-events', 'bounding-box')
       d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
@@ -189,7 +188,7 @@ export function handleSelection () {
 
     // For the drivers that are part of the selection, set their opacity to 1
     // and allow interactions
-    pcSelection.forEach(driver => {
+    dlSelection.forEach(driver => {
       d3.select('.drivers_legend').selectAll('#' + driver).style('opacity', 1)
         .style('pointer-events', 'bounding-box')
       d3.select('.drivers_legend').selectAll('g#' + driver)
@@ -197,9 +196,6 @@ export function handleSelection () {
         .style('pointer-events', 'all')
     })
   } else {
-    // This is essentially the case in which drivers_legend is interacted with first
-    // since parallel_coordinates starts with all values as selected
-
     // For all the drivers that aren't part of both selection, decrease their opacity
     // and remove/limit the interactions
     allDrivers.filter(driver => !selected.includes(driver)).forEach(elem => {
@@ -224,7 +220,7 @@ export function handleSelection () {
 // function to reset the values for the 'selected' attribute
 export function resetAllFilters () {
   d3.select('.drivers_legend').select('g').selectAll('g')
-    .attr('selected', 'false')
+    .attr('selected', 'true')
     .style('pointer-events', 'bounding-box')
   // if there are zoom buttons, use them to reset the zoom
   d3.selectAll('.resetZoomButton').dispatch('click')

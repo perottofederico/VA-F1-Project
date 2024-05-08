@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 import { getTeamColor, handleSelection, isSecondDriver, TR_TIME } from '../utils'
-
+import { onClick } from './eventHandlers'
 export default function () {
   let data = []
   let updateData
@@ -24,6 +24,7 @@ export default function () {
     d3.selectAll('#' + d.Abbreviation).style('opacity', 1)
       .style('cursor', 'pointer')
   }
+  /*
   function onClick (e, d) {
     const driverClicked = d3.select('.drivers_legend').select('#' + d.Abbreviation)
     if (driverClicked.attr('selected') === 'true') {
@@ -33,6 +34,7 @@ export default function () {
     }
     handleSelection()
   }
+  */
   function onLeave (e, d) {
     handleSelection()
   }
@@ -48,9 +50,9 @@ export default function () {
       function enterFn (sel) {
         const p = sel.append('g')
           .attr('id', d => d.Abbreviation)
-          .attr('selected', 'false')
+          .attr('selected', 'true')
           .style('pointer-events', 'bounding-box') // this might not work outside of chrome, may need to append an invisible rect
-          .on('click', onClick)
+          .on('click', (e, d) => onClick(e, d))
           .on('mouseenter', onEnter)
           .on('mouseleave', onLeave)
 
@@ -119,7 +121,7 @@ export default function () {
           .attr('cx', dimensions.margin.left + 60)
           .attr('cy', (d, i) => ((dimensions.height - dimensions.margin.bottom) * i / 10) - 5)
 
-        bounds.selectAll('rect').transition().duration(TR_TIME)
+        bounds.selectAll('rect.square').transition().duration(TR_TIME)
           .attr('x', d => dimensions.width / 2 + dimensions.margin.right + 60)
           .attr('y', (d, i) => ((dimensions.height - dimensions.margin.bottom) * i / 10) - 10)
       }

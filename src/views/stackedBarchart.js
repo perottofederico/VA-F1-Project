@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import { compoundToColor, getTeamColor, TR_TIME } from '../utils'
+import { compoundToColor, getTeamColor, isSecondDriver, TR_TIME } from '../utils'
 
 export default function () {
   let laps = []
@@ -27,19 +27,33 @@ export default function () {
     d3.select('#root')
       .append('div')
       .attr('class', 'tooltip')
-      .html('Stint ' + d.stint + '<br> Laps: ' +
-      (d.lap + 1) + ' to ' + (d.lap + d.length) +
-      '<br> Compound: ' + d.compound)
+      .style('border', isSecondDriver(d.driver) ? 'dashed' : 'solid')
+      .style('border-color', getTeamColor(d.team))
+      .style('border-width', '3px')
+      .html(`<span style = "color:${getTeamColor(d.team)}; font-weight: 500; font-size: 15;">${d.driver}</span> - Stint #${d.stint}
+      <br> 
+      <span>Laps: ${(d.lap)} to ${(d.lap + d.length)}</span>
+      <br> 
+      <span> Compound: ${d.compound}</span>
+    `)
 
     // Highlight corresponding laps in linechart
-    /*
-    const elems = d3.select('.linechart_container').select('.linechart')
-      .select('.contents').selectAll('#' + d.driver)
-    elems.style('opacity', datum =>
-      datum.lapNumber <= (d.lap + d.length) && datum.lapNumber >= d.lap ? 1 : 0.1
-    )
-    elems.raise()
-    */
+    const secondDriver = isSecondDriver(d.driver)
+    if (secondDriver) {
+      const elems = d3.select('.linechart_container').select('.linechart')
+        .select('.contents').selectAll('rect#' + d.driver)
+      elems.style('opacity', datum =>
+        datum.lapNumber >= d.lap && datum.lapNumber <= (d.lap + d.length) ? 1 : 0.1
+      )
+      elems.raise()
+    } else {
+      const elems = d3.select('.linechart_container').select('.linechart')
+        .select('.contents').selectAll('circle#' + d.driver)
+      elems.style('opacity', datum =>
+        datum.lapNumber <= (d.lap + d.length) && datum.lapNumber >= d.lap ? 1 : 0.1
+      )
+      elems.raise()
+    }
   }
   function mouseleave (event, d) {
     d3.selectAll('.tooltip').remove()
@@ -177,6 +191,8 @@ export default function () {
 
       //
       updateData = function () {
+        // Regroup the data because otherwise the xScale domain would reference the old data
+        const groupedLaps = d3.group(laps.data, d => d.driver)
         xScale
           .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
           .domain([0, groupedLaps.get(drivers.data[0].Abbreviation).length])

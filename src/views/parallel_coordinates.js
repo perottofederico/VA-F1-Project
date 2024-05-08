@@ -30,29 +30,6 @@ export default function () {
   function mouseMove (event, d) {
     const [x, y] = d3.pointer(event, this)
     const circles = bounds.selectAll('circle[axis=' + d + ']')
-    circles.each(elem => {
-      const circle = bounds.select('circle#' + elem.driver + '[axis =' + d + ']')
-      const cy = parseFloat(circle.attr('cy'))
-      const radius = parseFloat(circle.attr('r')) // its always 5
-      const opacity = parseFloat(circle.style('opacity'))
-      if (x >= -radius && x <= radius && y >= cy - radius && y <= cy + radius && opacity === 1) {
-        if (d3.select('.tooltip').empty()) {
-          d3.select('#root')
-            .append('div')
-            .attr('class', 'tooltip')
-            .attr('id', elem.driver)
-            .style('border', 'solid')
-            .style('border-width', '3px')
-            .style('left', event.x + 5 + 'px')
-            .style('top', event.y - 50 + 'px')
-            .style('border-color', getTeamColor(elem.team))
-            .html(elem.driver +
-              '<br> ' + getContextualData(d, elem))
-        }
-      } else {
-        d3.selectAll('.tooltip#' + elem.driver).remove()
-      }
-    })
 
     const squares = bounds.selectAll('rect[axis=' + d + ']')
     squares.each(elem => {
@@ -78,6 +55,32 @@ export default function () {
       } else {
         d3.selectAll('.tooltip#' + elem.driver).remove()
       }
+
+      circles.each(elem => {
+        const circle = bounds.select('circle#' + elem.driver + '[axis =' + d + ']')
+        const cy = parseFloat(circle.attr('cy'))
+        const radius = parseFloat(circle.attr('r')) // its always 5
+        const opacity = parseFloat(circle.style('opacity'))
+        if (x >= -radius && x <= radius && y >= cy - radius && y <= cy + radius && opacity === 1) {
+          if (d3.select('.tooltip').empty()) {
+            d3.select('#root')
+              .append('div')
+              .attr('class', 'tooltip')
+              .attr('id', elem.driver)
+              .style('border', 'solid')
+              .style('border-width', '3px')
+              .style('left', event.x + 5 + 'px')
+              .style('top', event.y - 50 + 'px')
+              .style('border-color', getTeamColor(elem.team))
+              .html(`<span style = "color:${getTeamColor(elem.team)}; font-weight: 500; font-size: 15;">${elem.driver}</span>
+                <br>  
+                ${getContextualData(d, elem)}`
+              )
+          }
+        } else {
+          d3.selectAll('.tooltip#' + elem.driver).remove()
+        }
+      })
     })
   }
 
@@ -166,45 +169,10 @@ export default function () {
         .y(([metric, value]) => yScales[metric](value))
 
       // Create brush behaviour
-      const selections = new Map()
       const brush = d3.brushY()
         // maybe add a little extra on the height for clarity
         .extent([[-25, -5], [25, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
         .on('end', brushZoom)
-
-      // This version of the brushing function only really highlighted the
-      // paths that were inside the brush. I decided to replace it with the one below
-      // because i think it makes more sense and works better
-      function brushed ({ selection }, key) {
-        if (selection === null) selections.delete(key)
-        else selections.set(key, selection.map(yScales[key].invert))
-
-        if (!selections.size) {
-          d3.select('.parallel_coordinates_container').select('.contents').selectAll('path').style('opacity', 1)
-          handleSelection()
-        }
-        let selected = drivers.data.map(d => d.Abbreviation)
-        bounds.selectAll('path').each(function (d) {
-          // Since I decided to have different ranges for some axes
-          // I also need to adapt the check to the current axis
-          let isIncluded
-          Array.from(selections)
-            .forEach((elem) => {
-              if (elem[0] === 'AvgLaptime' || elem[0] === 'PitStopTime') {
-                isIncluded = (d[elem[0]] >= elem[1][0] && d[elem[0]] <= elem[1][1])
-              } else {
-                isIncluded = (d[elem[0]] >= elem[1][1] && d[elem[0]] <= elem[1][0])
-              }
-
-              if (!isIncluded && selected.includes(d.driver)) {
-                selected = selected.filter(driver => driver !== d.driver)
-              }
-              d3.select('.parallel_coordinates_container').select('#' + d.driver).attr('selected', selected.includes(d.driver) ? 'true' : 'false')
-            })
-        })
-        // Call a separate function that handles the behavioru of the selected elements
-        handleSelection()
-      }
 
       // Brushing zoom function
       function brushZoom ({ selection }, key) {
@@ -435,6 +403,7 @@ export default function () {
         )
       }
       dataJoin()
+      handleSelection()
 
       //
       updateData = function () {

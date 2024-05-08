@@ -7,12 +7,6 @@ class Laps {
   }
 
   addLap (lap) {
-    //
-    // Some laps are missing the lapTime
-    // this can be due to multiple reasons(red flags, crashes, retirements, pit stops)
-    // in the case of pitstops, it may be useful to compute them separately.
-
-    // In the case of red flags and DNFs we can tell the application to ignore those laps
     if (isNaN(lap.lapStartDate)) {
       this.data.push(lap)
     }
@@ -117,18 +111,39 @@ class Laps {
     }
   }
 
+  //
+  // Some laps are missing the lapTime. generally this is due to DNFs or red flags
+  //
+  // if lap.laptime is null, compute it using the lap.lapStartDate of the next lap
+  // unless there is no next lap, in which case the lap is ignored because it means
+  // that the driver either DNFed or the race ended
+  fixMissingLapTimes (laps) {
+    // if lap.laptime is null, compute it using the lap.lapStartDate of the next lap
+    // if there is no next lap, the lap is ignored
+    laps.forEach(lap => {
+      if (!lap.lapTime) {
+        const nextLap = laps.find(l => l.lapNumber === lap.lapNumber + 1 && l.driver === lap.driver)
+        if (nextLap) {
+          const lapTime = Date.parse(nextLap.lapStartDate) - Date.parse(lap.lapStartDate)
+          lap.lapTime = this.millisecondsToLaptime(lapTime)
+        }
+      } else {
+        // For some reason some laptimes don't include the milliseconds.
+        // This if statement handles that case.
+        if (lap.lapTime.includes('.')) lap.lapTime = lap.lapTime.slice(10, -3)
+        else lap.lapTime = lap.lapTime.slice(10).concat('.000')
+      }
+    })
+  }
+
   laptimeToMilliseconds (lapTime) {
-    const time = lapTime.replace('0 days 00:', '')
-    const minutes = parseInt(time.split(':')[0])
-    let seconds = 0
+    const minutes = parseInt(lapTime.split(':')[0])
+    const seconds = parseInt(lapTime.split(':')[1].split('.')[0])
     let ms = 0
     // For some reason some laptimes don't include the milliseconds.
     // This if statement handles that case.
-    if (time.split(':')[1].includes('.')) {
-      seconds = parseInt(time.split(':')[1].split('.')[0])
-      // laptimes actually are in microseconds
-      // but the last 3 numbers are always 0, so i remove them
-      ms = parseInt(time.split('.')[1].slice(0, -3))
+    if (lapTime.split(':')[1].includes('.')) {
+      ms = parseInt(lapTime.split('.')[1])
     }
     return minutes * 60000 + seconds * 1000 + ms
   }

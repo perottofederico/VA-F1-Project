@@ -38,7 +38,8 @@ function setupPage () {
     .attr('value', d => d)
     .text(d => d.replace('_', ': '))
 
-  const resetFiltersBtn = menuContainer.append('button')
+  // Reset filters button
+  menuContainer.append('button')
     .style('left', '100px')
     .style('position', 'relative')
     .text('Reset All Filters')

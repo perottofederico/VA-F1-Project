@@ -12,8 +12,6 @@ class Controller {
 
     // Views
     this.views = ['drivers_legend', 'linechart', 'parallel_coordinates', 'stackedBarchart', 'scatterplot']
-    // lets start with just linechart
-    // this.views.forEach(v => { console.log([v]) })
     this.linechart = linechart()
     this.drivers_legend = drivers_legend()
     this.parallel_coordinates = parallel_coordinates()
@@ -43,6 +41,7 @@ class Controller {
     this.laps.addLap(lap)
   }
 
+  // I don't think this is ever called
   onLapsListChanged () {
     this.linechart.data(this.laps)
     this.parallel_coordinates.laps(this.laps)
@@ -100,16 +99,21 @@ class Controller {
     this.pca.deleteData()
   }
 
+  fixMissingLapTimes () {
+    this.laps.fixMissingLapTimes(this.laps.data)
+  }
+
   handleRaceChanged () {
+    this.fixMissingLapTimes()
+    this.drivers_legend.data(this.drivers)
     this.linechart.data(this.laps)
     this.linechart.results(this.drivers)
     this.parallel_coordinates.laps(this.laps)
-    this.stackedBarchart.laps(this.laps)
-    this.drivers_legend.data(this.drivers)
-    this.stackedBarchart.drivers(this.drivers)
     this.parallel_coordinates.drivers(this.drivers)
     this.parallel_coordinates.pitStops(this.pitStops)
     this.parallel_coordinates.telemetry(this.telemetry)
+    this.stackedBarchart.laps(this.laps)
+    this.stackedBarchart.drivers(this.drivers)
     this.scatterPlot.data(this.pca)
   }
 }

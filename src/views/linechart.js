@@ -36,20 +36,17 @@ export default function () {
     d3.select('#root')
       .append('div')
       .attr('class', 'tooltip')
-      .text('Driver: ' + d.driver + ' \nDelta: ' + (d.delta / 1000) + 's')
-
-    /*
-    d3.selectAll('circle')
-      .filter((d, i) => (d !== e.target.__data__)) // There's no way this is the best way to do this lol
-      .attr('opacity', 0.2)
-    */
-
-    // DO it better for the love of god
-    const id = (d3.select(`#${d.driver}`)) // gets the path i want to highlight
-    const datum = (id._groups[0][0].__data__) // AGAIN there's no way this is correct lol
-    d3.select('g').selectAll('path')
-      .filter(p => p !== datum)
-      .attr('opacity', 0.2)
+      .style('border', isSecondDriver(d.driver) ? 'dashed' : 'solid')
+      .style('border-color', getTeamColor(d.team))
+      .style('border-width', '3px')
+      .html(`<span style = "color:${getTeamColor(d.team)}; font-weight: 500; font-size: 15;">${d.driver}</span> - Lap #${(d.lapNumber)}
+      <br> 
+      <span>Lap time: ${d.lapTime}</span>
+      <br>
+      <span>Delta: ${d3.timeFormat('%M:%S.%L')(d.delta)}</span>
+      <br>
+      <span> position: ${d.position}</span>
+    `)
   }
   function onMouseMove (e, d) {
     // IF the margins are wrong the tooltip appears under the mouse, triggering the mouseleave event
@@ -63,20 +60,6 @@ export default function () {
     d3.selectAll('circle')
       .attr('opacity', 1)
     d3.select('g').selectAll('path')
-      .attr('opacity', 1)
-  }
-  function onLineEnter (e, d) {
-    d3.select('g').selectAll('path')
-      .filter((d, i) => (d !== e.target.__data__)) // There's no way this is the best way to do this lol
-      .attr('opacity', 0.2)
-    d3.selectAll('circle')
-      .filter((d, i) => d.driver !== e.target.id)
-      .attr('opacity', 0.2)
-  }
-  function onLineLeave (e, d) {
-    d3.select('g').selectAll('path')
-      .attr('opacity', 1)
-    d3.selectAll('circle')
       .attr('opacity', 1)
   }
 
@@ -215,6 +198,7 @@ export default function () {
           .attr('x2', d => xScale(d))
           .attr('y1', 0)
           .attr('y2', dimensions.height - dimensions.margin.top - dimensions.margin.bottom)
+          .style('pointer-events', 'none')
       }
       function updateXGrid (sel) {
         return sel
@@ -236,6 +220,7 @@ export default function () {
           .attr('x2', dimensions.width - dimensions.margin.right - dimensions.margin.left)
           .attr('y1', d => yScale(d))
           .attr('y2', d => yScale(d))
+          .style('pointer-events', 'none')
       }
       function updateYGrid (sel) {
         return sel
@@ -267,8 +252,6 @@ export default function () {
             .y(d => yScale(d.delta))
             // .curve(d3.curveCatmullRom.alpha(0.5)) // https://d3js.org/d3-shape/curve
           )
-          .on('mouseenter', (e, d) => onLineEnter(e, d))
-          .on('mouseleave', (e, d) => onLineLeave(e, d))
       }
       function updateFn (sel) {
         return sel
