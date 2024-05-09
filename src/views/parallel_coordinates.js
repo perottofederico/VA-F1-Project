@@ -30,8 +30,8 @@ export default function () {
   function mouseMove (event, d) {
     const [x, y] = d3.pointer(event, this)
     const circles = bounds.selectAll('circle[axis=' + d + ']')
-
     const squares = bounds.selectAll('rect[axis=' + d + ']')
+
     squares.each(elem => {
       const square = bounds.select('rect#' + elem.driver + '[axis =' + d + ']')
       const squareY = parseFloat(square.attr('y'))
@@ -49,38 +49,40 @@ export default function () {
             .style('left', event.x + 5 + 'px')
             .style('top', event.y - 50 + 'px')
             .style('border-color', getTeamColor(elem.team))
-            .html(elem.driver +
-              '<br> ' + getContextualData(d, elem))
+            .html(`<span style = "color:${getTeamColor(elem.team)}; font-weight: 500; font-size: 15;">${elem.driver}</span>
+            <br>  
+            ${getContextualData(d, elem)}`
+            )
         }
       } else {
         d3.selectAll('.tooltip#' + elem.driver).remove()
       }
+    })
 
-      circles.each(elem => {
-        const circle = bounds.select('circle#' + elem.driver + '[axis =' + d + ']')
-        const cy = parseFloat(circle.attr('cy'))
-        const radius = parseFloat(circle.attr('r')) // its always 5
-        const opacity = parseFloat(circle.style('opacity'))
-        if (x >= -radius && x <= radius && y >= cy - radius && y <= cy + radius && opacity === 1) {
-          if (d3.select('.tooltip').empty()) {
-            d3.select('#root')
-              .append('div')
-              .attr('class', 'tooltip')
-              .attr('id', elem.driver)
-              .style('border', 'solid')
-              .style('border-width', '3px')
-              .style('left', event.x + 5 + 'px')
-              .style('top', event.y - 50 + 'px')
-              .style('border-color', getTeamColor(elem.team))
-              .html(`<span style = "color:${getTeamColor(elem.team)}; font-weight: 500; font-size: 15;">${elem.driver}</span>
+    circles.each(elem => {
+      const circle = bounds.select('circle#' + elem.driver + '[axis =' + d + ']')
+      const cy = parseFloat(circle.attr('cy'))
+      const radius = parseFloat(circle.attr('r')) // its always 5
+      const opacity = parseFloat(circle.style('opacity'))
+      if (x >= -radius && x <= radius && y >= cy - radius && y <= cy + radius && opacity === 1) {
+        if (d3.select('.tooltip').empty()) {
+          d3.select('#root')
+            .append('div')
+            .attr('class', 'tooltip')
+            .attr('id', elem.driver)
+            .style('border', 'solid')
+            .style('border-width', '3px')
+            .style('left', event.x + 5 + 'px')
+            .style('top', event.y - 50 + 'px')
+            .style('border-color', getTeamColor(elem.team))
+            .html(`<span style = "color:${getTeamColor(elem.team)}; font-weight: 500; font-size: 15;">${elem.driver}</span>
                 <br>  
                 ${getContextualData(d, elem)}`
-              )
-          }
-        } else {
-          d3.selectAll('.tooltip#' + elem.driver).remove()
+            )
         }
-      })
+      } else {
+        d3.selectAll('.tooltip#' + elem.driver).remove()
+      }
     })
   }
 
@@ -319,7 +321,7 @@ export default function () {
           if (d === 'AvgLaptime') {
             d3.select(this).call(d3.axisLeft().scale(yScales[d]).tickFormat(d3.timeFormat('%M:%S.%L')))
           } else {
-            d3.select(this).call(d3.axisLeft().scale(yScales[d]).tickValues(yScales[d].ticks().concat(yScales[d].domain())))
+            d3.select(this).call(d3.axisLeft().scale(yScales[d]))// .tickValues(yScales[d].ticks().concat(yScales[d].domain())))
           }
           // Add brushing to axes
           d3.select(this)

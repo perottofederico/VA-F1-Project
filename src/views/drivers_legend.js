@@ -56,6 +56,16 @@ export default function () {
           .on('mouseenter', onEnter)
           .on('mouseleave', onLeave)
 
+        p.append('rect')
+          .attr('id', d => d.Abbreviation)
+          .attr('class', 'outline')
+          .attr('x', (d, i) => i % 2 ? dimensions.width / 2 + dimensions.margin.right - 5 : dimensions.margin.left - 5)
+          .attr('y', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10) - 15)
+          .attr('width', 80)
+          .attr('height', 20)
+          .attr('fill', 'none')
+          .attr('stroke', d => getTeamColor(d.TeamName))
+
         p.append('text')
           .attr('id', d => d.Abbreviation)
           .attr('x', (d, i) => i % 2 ? dimensions.width / 2 + dimensions.margin.right : dimensions.margin.left)
@@ -98,6 +108,14 @@ export default function () {
       }
       function updateFn (sel) {
         sel.attr('id', d => d.Abbreviation)
+
+        const outline = sel.select('.outline')
+          .attr('id', d => d.Abbreviation)
+        outline.call(update => update.transition().duration(TR_TIME)
+          .attr('x', (d, i) => i % 2 ? dimensions.width / 2 + dimensions.margin.right - 5 : dimensions.margin.left - 5)
+          .attr('y', (d, i) => ((dimensions.height - dimensions.margin.bottom) * Math.floor(i / 2) / 10) - 15)
+        )
+
         const text = sel.select('text')
           .attr('id', d => d.Abbreviation)
         text.call(update => update.transition().duration(TR_TIME)
