@@ -3,7 +3,7 @@ import * as d3 from 'd3'
 class Drivers {
   constructor () {
     this.data = []
-    // this.onDriversListChanged = () => {}
+    this.onDriversListChanged = () => {}
   }
 
   addDriver (driver) {
@@ -19,8 +19,9 @@ class Drivers {
     this.data.forEach(d => {
       if (d.LastName === lastName) {
         startingPos = parseInt(d.GridPosition)
+        if (startingPos === 0) startingPos = 20
         finishingPos = parseInt(d.Position)
-        result = d.GridPosition - d.Position
+        result = startingPos - finishingPos
       }
     })
     return { startingPos, finishingPos, result }

@@ -20,6 +20,7 @@ export default function () {
     }
   }
 
+  //
   function onEnter (e, d) {
     d3.selectAll('#' + d.Abbreviation).style('opacity', 1)
       .style('cursor', 'pointer')
@@ -152,7 +153,8 @@ export default function () {
       }
 
       updateData = function () {
-        dataJoin()
+        // With how i set up the data update, i don't need to call dataJoin here
+        // dataJoin()
       }
       updateWidth = function () {
         title.transition().duration(TR_TIME)

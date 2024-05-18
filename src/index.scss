@@ -62,16 +62,20 @@ body {
   }
   .parallel_coordinates_container { 
     grid-area: parallel_coordinates_container;
+    border-top: #FFFFFF 1px solid;
     overflow: hidden;
   }
   .stackedBarchart_container { 
     grid-area: stacked_barchart_container; 
+    border-top: #FFFFFF 1px solid;
     overflow: hidden;
   }
   .scatterPlot_container { 
-    grid-area: scatterplot_container; 
+    grid-area: scatterplot_container;
+    border-top: #FFFFFF 1px solid; 
     overflow: hidden;
   }
+  
 
 .tooltip {
   background-color: white;

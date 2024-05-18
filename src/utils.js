@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 import { onClick } from './views/eventHandlers'
-export const TR_TIME = 750
+export const TR_TIME = 350
 export const EPSILON = 0.000001
 
 export function sentenceString (s) {
@@ -12,7 +12,7 @@ export function formatLap (entry) {
     driver: entry.Driver,
     driverNumber: entry.DriverNumber,
     lapNumber: entry.LapNumber,
-    lapTime: entry.LapTime, // .slice(10, -3),
+    lapTime: entry.LapTime,
     stint: entry.Stint,
     pitOutTime: entry.PitOutTime,
     pitInTime: entry.PitInTime,
@@ -23,7 +23,8 @@ export function formatLap (entry) {
     lapStartDate: entry.LapStartDate,
     trackStatus: entry.TrackStatus,
     position: entry.Position,
-    delta: 0
+    delta: 0,
+    lapId: entry.Driver + entry.LapNumber
   }
 }
 
@@ -98,11 +99,11 @@ export function trackStatusToString (trackStatus) {
 // convert a 'compound' string into a color hex
 export function compoundToColor (compound) {
   switch (compound) {
-    case 'SOFT': return '#ff2928'
-    case 'MEDIUM': return '#fffd19'
-    case 'HARD': return '#fff'
-    case 'INTERMEDIATE': return '#3bcd2a'
-    case 'WET': return '#018dd2'
+    case 'SOFT': return '#dd0741'
+    case 'MEDIUM': return '#F8D500'
+    case 'HARD': return '#eee'
+    case 'INTERMEDIATE': return '#44D745'
+    case 'WET': return '#005AFF'
   }
 }
 
@@ -121,9 +122,10 @@ export function getContextualData (axis, driver) {
 
 // Function to handle multiple selections
 export function handleSelection () {
+  // A list of all the drivers
   const allDrivers = [...d3.select('.drivers_legend').select('g').selectAll('g')].map(driver => driver.id)
   const totalDrivers = allDrivers.length
-  // There's three different possible graphs that set the 'selected' status
+
   // drivers_legend
   const dlBounds = d3.select('.drivers_legend')
   const dlSelection = [...dlBounds.selectAll('g[selected = true]')]
@@ -133,12 +135,16 @@ export function handleSelection () {
   const pcSelection = [...pcBounds.selectAll('path[selected = true]')]
     .map(driver => driver.id)
   // stacked_barchart
+  const sbBounds = d3.select('.stackedBarchart_container').select('.contents')
+  const sbData = sbBounds.selectAll('rect[selected = true]')
+  const sbSelection = [...sbBounds.selectAll('rect[selected = true]')]
+    .map(driver => driver.id)
 
   // Basically an AND of the two lists
   const selected = pcSelection.filter(d => dlSelection.includes(d))
   // console.log(dlSelection, pcSelection, selected)
 
-  // Case for the default values of the 'selected' attribute
+  // This case handles the default values of the 'selected' attribute
   // It's probably redundant
   if (dlSelection.length === totalDrivers && pcSelection.length === totalDrivers) {
     // console.log('full selection')
@@ -149,11 +155,11 @@ export function handleSelection () {
       d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 1)
         .style('pointer-events', 'all')
     })
-  } else if (dlSelection.length === totalDrivers && !(pcSelection.length === totalDrivers)) {
-    // Case in which the first interaction happens in the parallel_coordinates
-
-    console.log('pcSelection')
-    // Set the opacity and status of elements outside the selection
+  } else
+  // Case in which the interaction has happened only in the parallel coordinates
+  if (dlSelection.length === totalDrivers && !(pcSelection.length === totalDrivers)) {
+    // console.log('pcSelection')
+    // Set the opacity, interactions and status of elements outside the selection
     allDrivers.filter(driver => !pcSelection.includes(driver)).forEach(elem => {
       d3.select('.drivers_legend').selectAll('#' + elem)
         .style('opacity', 0.5)
@@ -162,7 +168,7 @@ export function handleSelection () {
       d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
         .style('pointer-events', 'none')
 
-      // Set the opacity and stats of elements inside the selection
+      // Set the opacity, interactions and status of elements inside the selection
       pcSelection.forEach(elem => {
         d3.select('.drivers_legend').selectAll('#' + elem)
           .attr('selected', 'true')
@@ -173,12 +179,11 @@ export function handleSelection () {
           .style('pointer-events', 'all')
       })
     })
-  } else if (!(dlSelection.length === totalDrivers) && pcSelection.length === totalDrivers) {
-    // Case in which
-
-    // For all the drivers not part of the selection, reduce their opacity
-    // For the elements in drivers_legend, limit their interaction (TODO)
-    // for the others (rect, paths, etc), eliminate the ability to interact
+  } else
+  // Case in which the interaction has happened only in the drivers_legend
+  if (!(dlSelection.length === totalDrivers) && pcSelection.length === totalDrivers) {
+    // console.log('dlSelection')
+    // Set the opacity, interactions and status of elements outside the selection
     allDrivers.filter(driver => !dlSelection.includes(driver)).forEach(elem => {
       d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
         .style('pointer-events', 'bounding-box')
@@ -196,8 +201,11 @@ export function handleSelection () {
         .style('pointer-events', 'all')
     })
   } else {
+    // Case in which the interaction has happened in both the drivers_legend and the parallel coordinates
+
     // For all the drivers that aren't part of both selection, decrease their opacity
     // and remove/limit the interactions
+    // console.log('mixed selection')
     allDrivers.filter(driver => !selected.includes(driver)).forEach(elem => {
       d3.select('.drivers_legend').selectAll('#' + elem).style('opacity', 0.5)
         .style('pointer-events', 'bounding-box')
@@ -215,6 +223,41 @@ export function handleSelection () {
         .style('pointer-events', 'all')
     })
   }
+
+  // Handle Selection of bars/stints in barchart
+  // for each of the drivers in sbSelection, select all of the other bars of the same driver and reduce their opacity
+  sbSelection.forEach(driver => {
+    d3.select('.stackedBarchart_container').select('.contents')
+      .selectAll('rect#' + driver + '[selected = false]')
+      .style('opacity', 0.5)
+      // .style('pointer-events', 'all')
+  })
+  // for each of the drivers not in sbSelection, select all of the bars and set their opacity to 1
+  allDrivers.filter(driver => !sbSelection.includes(driver)).forEach(driver => {
+    d3.select('.stackedBarchart_container').select('.contents')
+      .selectAll('rect#' + driver)
+      .style('opacity', 1)
+      // .style('pointer-events', 'all')
+  })
+
+  // Given how I implemented the linechart, I can't rely on the updated data to re-draw the circles/squares
+  // so I have to manually set the opacity of the elements that are not part of the selection
+  sbData.each(stint => {
+    const secondDriver = isSecondDriver(stint.driver)
+    if (secondDriver) {
+      d3.select('.linechart_container').select('.linechart').select('.contents')
+        .selectAll(`rect#${stint.driver}`).filter(d => {
+          return d.lapNumber <= stint.lap || d.lapNumber > stint.lap + stint.length
+        })
+        .style('opacity', 0)
+    } else {
+      d3.select('.linechart_container').select('.linechart').select('.contents')
+        .selectAll(`circle#${stint.driver}`).filter(d => {
+          return d.lapNumber <= stint.lap || d.lapNumber > stint.lap + stint.length
+        })
+        .style('opacity', 0)
+    }
+  })
 }
 
 // function to reset the values for the 'selected' attribute
@@ -227,5 +270,11 @@ export function resetAllFilters () {
 
   d3.select('.parallel_coordinates_container').selectAll('path')
     .attr('selected', 'true')
+
+  // to reset the selection in the stacked barchart, i dispatch a click event
+  // so that the graph is redrawn with the full data
+  d3.select('.stackedBarchart_container').select('.contents').selectAll('rect[selected = true]')
+    .dispatch('click')
+
   handleSelection()
 }

@@ -3,11 +3,12 @@ import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
 
 export default function () {
   let data = []
-  const xAccessor = d => parseFloat(d.PC1)// for some reason PC1 and PC2 are treated as strings, so i need to parse them.
-  const yAccessor = d => parseFloat(d.PC2) // should move this conversion to a model file maybe
+  const xAccessor = d => parseFloat(d.dim1)// for some reason dim1 and dim2 are treated as strings, so i need to parse them.
+  const yAccessor = d => parseFloat(d.dim2) // should move this conversion to a model file maybe
   let updateData
   let updateWidth
   let updateHeight
+  let graphData
   let svg
   let bounds
   let title
@@ -19,20 +20,38 @@ export default function () {
     margin: {
       top: 50,
       right: 30,
-      bottom: 30,
+      bottom: 50,
       left: 30
     }
   }
 
+  function onEnter (e, d) {
+    d3.select('#root')
+      .append('div')
+      .attr('class', 'tooltip')
+      .style('border', isSecondDriver(d.Driver) ? 'dashed' : 'solid')
+      .style('border-color', getTeamColor(d.Team))
+      .style('left', e.x - 100 + 'px')
+      .style('top', e.y - 50 + 'px')
+      .style('border-width', '3px')
+      .html(`<span style = "color:${getTeamColor(d.Team)}; font-weight: 500; font-size: 15;">${d.Driver}</span> - Lap #${d.LapNumber}
+      
+    `)
+  }
+  function onLeave (e, d) {
+    d3.selectAll('.tooltip').remove()
+  }
   //
   function scatterPlot (selection) {
     selection.each(function () {
+      graphData = data.data
+      console.log('scatterPlot.js - graphData: ', graphData)
       const xScale = d3.scaleLinear()
-        .domain(d3.extent(data.data, xAccessor))
+        .domain(d3.extent(graphData, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
 
       const yScale = d3.scaleLinear()
-        .domain(d3.extent(data.data, yAccessor))
+        .domain(d3.extent(graphData, yAccessor))
         .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0])
 
       //
@@ -46,10 +65,10 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('circle')
-          .data(data.data.filter(d => !isSecondDriver(d.Driver)))
+          .data(graphData.filter(d => !isSecondDriver(d.Driver)), d => d.Driver)
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
         bounds.selectAll('.square')
-          .data(data.data.filter(d => isSecondDriver(d.Driver)))
+          .data(graphData.filter(d => isSecondDriver(d.Driver)))
           .join(enterSquareFn, updateSquareFn, exitSquareFn)
       }
       dataJoin()
@@ -57,59 +76,63 @@ export default function () {
       //
       function enterCircleFn (sel) {
         sel.append('circle')
-          .attr('cx', d => xScale(parseFloat(d.PC1)))
-          .attr('cy', d => yScale(parseFloat(d.PC2)))
+          .attr('id', d => d.Driver)
+          .attr('cx', d => xScale(parseFloat(d.dim1)))
+          .attr('cy', d => yScale(parseFloat(d.dim2)))
           .attr('r', 5) // maybe change this ratio
           .attr('fill', d => getTeamColor(d.Team))
-          .attr('id', d => d.Driver)
           .style('stroke-width', '1px')
           .style('stroke', '#282828')
+          .on('mouseenter', (e, d) => onEnter(e, d))
+          .on('mouseleave', (e, d) => onLeave(e, d))
       }
       function updateCircleFn (sel) {
         return sel
           .call(update => update.transition().duration(TR_TIME)
-            .attr('cx', d => xScale(parseFloat(d.PC1)))
-            .attr('cy', d => yScale(parseFloat(d.PC2)))
-            .attr('r', 5)
-            .attr('stroke', d => getTeamColor(d.Team))
-            .attr('fill', d => getTeamColor(d.Team))
             .attr('id', d => d.Driver)
+            .attr('cx', d => xScale(parseFloat(d.dim1)))
+            .attr('cy', d => yScale(parseFloat(d.dim2)))
+            .attr('r', 5)
+            .attr('fill', d => getTeamColor(d.Team))
+            .attr('stroke', '#282828')
           )
       }
       function exitCircleFn (sel) {
-        return sel.call(exit => exit
-          .remove())
+        return sel.call(exit => exit.remove())
       }
 
       //
       function enterSquareFn (sel) {
         sel.append('rect')
           .attr('class', 'square')
-          .attr('x', d => xScale(parseFloat(d.PC1)) - 5)
-          .attr('y', d => yScale(parseFloat(d.PC2)) - 5)
+          .attr('id', d => d.Driver)
+          .attr('x', d => xScale(parseFloat(d.dim1)) - 5)
+          .attr('y', d => yScale(parseFloat(d.dim2)) - 5)
           .attr('width', 10) // maybe change this ratio
           .attr('height', 10)
           .attr('fill', d => getTeamColor(d.Team))
-          .attr('id', d => d.Driver)
           .style('stroke-width', '1px')
           .style('stroke', '#282828')
+          .on('mouseenter', (e, d) => onEnter(e, d))
+          .on('mouseleave', (e, d) => onLeave(e, d))
       }
       function updateSquareFn (sel) {
         return sel
           .call(update => update.transition().duration(TR_TIME)
-            .attr('x', d => xScale(parseFloat(d.PC1)) - 5)
-            .attr('y', d => yScale(parseFloat(d.PC2)) - 5)
+            .attr('id', d => d.Driver)
+            .attr('x', d => xScale(parseFloat(d.dim1)) - 5)
+            .attr('y', d => yScale(parseFloat(d.dim2)) - 5)
+            .attr('fill', d => getTeamColor(d.Team))
           )
       }
       function exitSquareFn (sel) {
-        return sel.call(exit => exit
-          .remove())
+        return sel.call(exit => exit.remove())
       }
 
       // Atm it's not being used but could be useful so i'm keeping it
       updateData = function () {
-        xScale.domain(d3.extent(data.data, xAccessor))
-        yScale.domain(d3.extent(data.data, yAccessor))
+        xScale.domain(d3.extent(graphData, xAccessor))
+        yScale.domain(d3.extent(graphData, yAccessor))
         xAxisContainer
           .transition()
           .duration(TR_TIME)
@@ -139,7 +162,7 @@ export default function () {
           // .call(d3.axisLeft(yScale))
           // for some fucking reason the transition doesn't work on this particula g element
           // but it does in updateheight, i'm honestly just fucking tired
-          .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.margin.top})`)
+          .attr('transform', `translate(${xScale(0) + dimensions.margin.left}, ${dimensions.margin.top})`)
 
         dataJoin()
       }
@@ -159,7 +182,7 @@ export default function () {
           .transition()
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale))
-          // .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.margin.top})`)
+          .attr('transform', `translate(${xScale(0) + dimensions.margin.left}, ${dimensions.margin.top})`)
 
         dataJoin()
       }
@@ -169,7 +192,7 @@ export default function () {
   scatterPlot.data = function (_) {
     if (!arguments.length) return data
     data = _
-    if (typeof updateData === 'function') updateData()
+    if (typeof updateData === 'function') this.computeGraphData()
     return scatterPlot
   }
   scatterPlot.width = function (_) {
@@ -209,6 +232,16 @@ export default function () {
     yAxisContainer = svg.append('g')
       .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.margin.top})`)
       .classed('scatterplot_yAxisContainer', true)
+  }
+  scatterPlot.computeGraphData = function (d) {
+    const value = d3.select('#scatterPlotSelect').node().value
+    if (value === 'All Laps') {
+      graphData = data.data
+    } else {
+      graphData = data.computeGraphData(data.data)
+    }
+    console.log('scatterPlot.js - graphData: ', graphData)
+    if (typeof updateData === 'function') updateData()
   }
   //
   return scatterPlot

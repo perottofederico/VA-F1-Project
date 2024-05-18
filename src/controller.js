@@ -25,14 +25,7 @@ class Controller {
     this.telemetry.bindTelemetryListChanged(this.onTelemetryListChanged.bind(this))
     this.pca.bindPcaListChanged(this.onPcaListChanged.bind(this))
     // Views functions binding
-
-    /*
-    this.views.forEach(v => {
-      this[v].bindBarEnter(c => this.handleBarEnter(c)).bind(this)
-      this[v].bindBarLeave(c => this.handleBarLeave(c)).bind(this)
-      this[v].bindTitleClick(e => this.handleTitleClick(e)).bind(this)
-    })
-    */
+    this.stackedBarchart.bindBarClick((e, d) => this.handleBarClick(e, d)).bind(this)
   }
 
   //
@@ -41,11 +34,38 @@ class Controller {
     this.laps.addLap(lap)
   }
 
-  // I don't think this is ever called
+  handleBarClick (e) {
+    console.log('bar clicked')
+    this.handleUpdateDriverLaps(e)
+  }
+
+  handleUpdateDriverLaps (e) {
+    const status = e.srcElement.attributes.selected.value
+    if (status === 'true') {
+      e.srcElement.attributes.selected.value = 'false'
+    } else {
+      e.srcElement.attributes.selected.value = 'true'
+    }
+    // create a new set of laps
+    console.log('creating new laps set')
+    const newLaps = this.laps.reduceDriverLaps()
+    console.log('redrawing parallel coordinates')
+    this.parallel_coordinates.computeGraphData(newLaps)
+    this.linechart.computeGraphData(newLaps)
+  }
+
+  handleSelectChange (d) {
+    console.log('select changed')
+    console.log(d)
+    this.scatterPlot.computeGraphData(d)
+  }
+
   onLapsListChanged () {
-    this.linechart.data(this.laps)
-    this.parallel_coordinates.laps(this.laps)
-    this.stackedBarchart.laps(this.laps)
+    console.log('Controller - Laps list changed')
+    // this.linechart.data(this.laps)
+    // this.parallel_coordinates.laps(this.laps)
+    // this.parallel_coordinates.computeGraphData()
+    // this.stackedBarchart.laps(this.laps)
   }
 
   //

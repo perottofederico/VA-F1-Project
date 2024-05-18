@@ -9,6 +9,7 @@ export default function () {
   let pitStops = []
   let drivers = []
   let telemetry = []
+  let graphData = []
   let updateData
   let updateWidth
   let updateHeight
@@ -92,60 +93,12 @@ export default function () {
 
   function parallel_coordinates (selection) {
     selection.each(async function () {
-      // Create an array to contain the computed data
-      const graphData = []
-      // Create an array to store all the telemetry promises
-      const telemetryPromises = []
-
-      // Group the laps
-      const groupedLaps = d3.group(laps.data, d => d.driver)
-      groupedLaps.forEach(d => {
-        if (d.length > 1) {
-        // compute the metrics based on the laps data
-          const lapsMetrics = laps.computeMetrics(d)
-
-          // pitstop data uses the last name as identifiers rather than the abbreviation
-          // So I use the results data to go from the abbreviation to the last name of each driver
-          // and then I compute the pitstop data (i.e. total pitstop time)
-          const lastName = drivers.data.find(n => n.Abbreviation === d[0].driver).LastName
-          const pitStopsMetrics = pitStops.computeMetrics(lastName)
-
-          // Compute the metrics based on the results (positions gained / lost)
-          const resultsMetrics = drivers.computeMetrics(lastName)
-
-          // Compute the metrics based on the telemetry (avg speed)
-          // The telemetry of each car is saved in a file named based on the driver's number
-          // This is because originally the data is in a dictionary of dataframes, where the driver's number is the key
-          const driverNumber = d[0].driverNumber
-          const round = d3.select('.selection').node().value
-          telemetryPromises.push(d3.csv(`./data/${round}/${driverNumber}_telemetry.csv`, d3.autoType).then(telemetryData => {
-            return telemetry.computeMetrics(telemetryData, Date.parse(d[0].lapStartDate), Date.parse(d[d.length - 1].lapStartDate))
-          }))
-
-          // Push the computed data to the array (except for the promises)
-          graphData.push({
-            driver: d[0].driver,
-            driverNumber: d[0].driverNumber,
-            team: d[0].team,
-            AvgLaptime: lapsMetrics.avgLaptime,
-            LaptimeConsistency: lapsMetrics.laptimeConsistency,
-            PitStopTime: pitStopsMetrics,
-            AvgSpeed: 0,
-            startingPos: resultsMetrics.startingPos,
-            finishingPos: resultsMetrics.finishingPos,
-            PositionsGained: resultsMetrics.result
-          })
-        }
-      })
-      // Resolve the promises and update the value
-      const avgspeeds = await Promise.all(telemetryPromises)
-      avgspeeds.forEach((avgSpeed, i) => {
-        graphData[i].AvgSpeed = avgSpeed
-      })
+      //
+      parallel_coordinates.computeGraphData(laps.data)
 
       //
       // Create the different scales for the different metrics
-      const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']
+      const metrics = ['AvgLaptime', 'LaptimeConsistency', 'AvgSpeed', 'PitStopTime', 'PositionsGained']
       const yScales = {}
       // I want to have the good results at the top of the scales, so i need to apply
       // different ranges to some axes
@@ -328,7 +281,7 @@ export default function () {
           // because of brush i put function here test
             .on('mousemove', mouseMove)
             .on('mouseleave', mouseLeave)
-            .on('dblclick', () => resetZoom(d)) // why do i have to do () => ??
+            .on('dblclick', () => resetZoom(d))
             .call(brush)
         })
 
@@ -337,6 +290,7 @@ export default function () {
         bounds.selectAll('g')
           .data(graphData, d => d.driver)
           .join(enter, update, exit)
+        handleSelection()
       }
       function enter (sel) {
         const p = sel.append('g')
@@ -404,10 +358,11 @@ export default function () {
           .remove()
         )
       }
-      dataJoin()
-      handleSelection()
+      // dataJoin()
 
       //
+      // This is still called once per data updated (laps, drivers, pitstops, telemetry)
+      // I should split it into 4 different functions
       updateData = function () {
         // This may look redundant but it keeps the axes correctly placed and visible until the data is ready
         // If I rewrite this, the axes collapse and then expand again
@@ -516,25 +471,25 @@ export default function () {
   parallel_coordinates.laps = function (_) {
     if (!arguments.length) return laps
     laps = _
-    if (typeof updateData === 'function') updateData()
+    // if (typeof updateData === 'function') updateData()
     return parallel_coordinates
   }
   parallel_coordinates.pitStops = function (_) {
     if (!arguments.length) return pitStops
     pitStops = _
-    if (typeof updateData === 'function') updateData()
+    // if (typeof updateData === 'function') updateData()
     return parallel_coordinates
   }
   parallel_coordinates.drivers = function (_) {
     if (!arguments.length) return drivers
     drivers = _
-    if (typeof updateData === 'function') updateData()
+    // if (typeof updateData === 'function') updateData()
     return parallel_coordinates
   }
   parallel_coordinates.telemetry = function (_) {
     if (!arguments.length) return telemetry
     telemetry = _
-    if (typeof updateData === 'function') updateData()
+    // if (typeof updateData === 'function') updateData()
     return parallel_coordinates
   }
   parallel_coordinates.width = function (_) {
@@ -578,7 +533,7 @@ export default function () {
       .attr('x', -5)
       .attr('y', -5)
 
-    const metrics = ['AvgLaptime', 'LaptimeConsistency', 'PitStopTime', 'AvgSpeed', 'PositionsGained']
+    const metrics = ['AvgLaptime', 'LaptimeConsistency', 'AvgSpeed', 'PitStopTime', 'PositionsGained']
 
     svg.selectAll('yAxis')
       .data(metrics)
@@ -592,6 +547,59 @@ export default function () {
       .text(d => d)
       .style('fill', 'white')
       .style('font-size', 12)
+  }
+  parallel_coordinates.computeGraphData = async function (setOfLaps) {
+    // Create an array to contain the computed data
+    graphData = []
+    // Create an array to store all the telemetry promises
+    const telemetryPromises = []
+
+    // Group the laps
+    const groupedLaps = d3.group(setOfLaps, d => d.driver)
+    groupedLaps.forEach(d => {
+      if (d.length > 1) {
+      // compute the metrics based on the laps data
+        const lapsMetrics = laps.computeMetrics(d)
+
+        // pitstop data uses the last name as identifiers rather than the abbreviation
+        // So I use the results data to go from the abbreviation to the last name of each driver
+        // and then I compute the pitstop data (i.e. total pitstop time)
+        const lastName = drivers.data.find(n => n.Abbreviation === d[0].driver).LastName
+        const pitStopsMetrics = pitStops.computeMetrics(lastName)
+
+        // Compute the metrics based on the results (positions gained / lost)
+        const resultsMetrics = drivers.computeMetrics(lastName)
+
+        // Compute the metrics based on the telemetry (avg speed)
+        // The telemetry of each car is saved in a file named based on the driver's number
+        // This is because originally the data is in a dictionary of dataframes, where the driver's number is the key
+        const driverNumber = d[0].driverNumber
+        const round = d3.select('.selection').node().value
+        telemetryPromises.push(d3.csv(`./data/${round}/${driverNumber}_telemetry.csv`, d3.autoType).then(telemetryData => {
+          return telemetry.computeMetrics(telemetryData, Date.parse(d[0].lapStartDate), Date.parse(d[d.length - 1].lapStartDate))
+        }))
+
+        // Push the computed data to the array (except for the promises)
+        graphData.push({
+          driver: d[0].driver,
+          driverNumber: d[0].driverNumber,
+          team: d[0].team,
+          AvgLaptime: lapsMetrics.avgLaptime,
+          LaptimeConsistency: lapsMetrics.laptimeConsistency,
+          PitStopTime: pitStopsMetrics,
+          AvgSpeed: 0,
+          startingPos: resultsMetrics.startingPos,
+          finishingPos: resultsMetrics.finishingPos,
+          PositionsGained: resultsMetrics.result
+        })
+      }
+    })
+    // Resolve the promises and update the value
+    const avgspeeds = await Promise.all(telemetryPromises)
+    avgspeeds.forEach((avgSpeed, i) => {
+      graphData[i].AvgSpeed = avgSpeed
+    })
+    updateData()
   }
 
   //

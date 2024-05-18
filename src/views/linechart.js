@@ -27,10 +27,11 @@ export default function () {
       top: 70,
       right: 80,
       bottom: 30,
-      left: 60
+      left: 80
     }
   }
 
+  let groupedData = []
   // Tutorials online use an existing div and just change its opacity and position, i wonder if its because of performance?
   function onPointEnter (e, d) {
     d3.select('#root')
@@ -41,9 +42,9 @@ export default function () {
       .style('border-width', '3px')
       .html(`<span style = "color:${getTeamColor(d.team)}; font-weight: 500; font-size: 15;">${d.driver}</span> - Lap #${(d.lapNumber)}
       <br> 
-      <span>Lap time: ${d.lapTime}</span>
+      <span>Lap time: ${d.lapTime ? d.lapTime : 'Not Available'}</span>
       <br>
-      <span>Delta: ${d3.timeFormat('%M:%S.%L')(d.delta)}</span>
+      <span>Delta: ${d.delta > 0 ? d3.timeFormat('+%M:%S.%L')(d.delta) : d3.timeFormat('-%M:%S.%L')(Math.abs(d.delta))}</span>
       <br>
       <span> position: ${d.position}</span>
     `)
@@ -52,8 +53,8 @@ export default function () {
     // IF the margins are wrong the tooltip appears under the mouse, triggering the mouseleave event
     // https://stackoverflow.com/questions/15837650/why-is-my-tooltip-flashing-on-and-off
     d3.select('.tooltip')
-      .style('left', (d3.pointer(e)[0]) + dimensions.margin.left + dimensions.margin.right + 'px')
-      .style('top', (d3.pointer(e)[1]) + dimensions.margin.top + dimensions.margin.bottom + 'px')
+      .style('left', (d3.pointer(e)[0]) + 130 + 'px')
+      .style('top', (d3.pointer(e)[1]) + 50 + 'px')
   }
   function onPointLeave (e, d) {
     d3.selectAll('.tooltip').remove()
@@ -66,10 +67,7 @@ export default function () {
   // There's for sure a better way to do this (and the other views)
   function linechart (selection) {
     selection.each(function () {
-      // Group the data based on the driver and compute the deltas
-      const groupedData = d3.group(data.data, d => d.driver)
-      data.computeDeltas(groupedData)
-
+      linechart.computeGraphData(data.data)
       // the 'results' data are ordered in finishing order, so the winner will be at index 0
       const winner = results.data[0].Abbreviation
 
@@ -89,18 +87,18 @@ export default function () {
         .call(d3.axisBottom(xScale))
       yAxisContainer
         .transition().duration(TR_TIME)
-        .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+        .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
 
       const zoom = d3.zoom()
         .extent([[0, 0], [dimensions.width, dimensions.height]])
-        .scaleExtent([1, 15])
+        .scaleExtent([1, 25])
         .translateExtent([[0, 0], [dimensions.width, dimensions.height]])
         .on('zoom', handleZoom)
 
       function handleZoom (e) {
         const y = e.transform.rescaleY(yScaleCopy)
         yScale.domain(y.domain())
-        yAxisContainer.call(d3.axisLeft(y).tickFormat(d3.timeFormat(d3.timeFormat('%M:%S.%L'))))
+        yAxisContainer.call(d3.axisLeft(y).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
         updateNoTr()
       }
       svg.call(zoom)
@@ -149,12 +147,26 @@ export default function () {
         // but i wonder if there's a way to chain the scatter and line plot
         bounds.selectAll('circle')
           // use circles for first drivers
-          .data((data.data).filter(d => !isSecondDriver(d.driver))) // removing the binding key actually binds each svg element to each datum,which is what i want
+          .data((data.data).filter(d => !isSecondDriver(d.driver)))
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
+
         bounds.selectAll('.square')
           // use squares for second drivers
           .data((data.data).filter(d => isSecondDriver(d.driver)))
           .join(enterSquare, updateSquare, exitSquare)
+        /*
+        // This is the way to do it if I want to use the grouped data
+        // which would have been smarter, but now i'm stuck with this
+        // and i will find a way to use opacity to filter what i don't want
+        bounds.selectAll('g.squares')
+          .data(groupedData.values().filter(d => isSecondDriver(d[0].driver)), d => (d[0].driver))
+          .enter().append('g')
+          .attr('class', 'squares')
+          .attr('id', d => d[0].driver)
+          .selectAll('rect.square')
+          .data(d => d, d => d.lapNumber)
+          .join(enterSquare, updateSquare, exitSquare)
+         */
 
         // after updating, some elements ended up behind new elements (i.e. new rectangles)
         // this re-inserts each selected element, in order, as the first child of its parent
@@ -177,7 +189,7 @@ export default function () {
       }
       function updateTrackStatus (sel) {
         return sel
-          .call(update => update.transition().duration(TR_TIME)
+          .call(update => update// .transition().duration(TR_TIME)
             .attr('x', d => xScale(d.lapNumber))
             .attr('width', xScale(2))
             .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top)
@@ -185,8 +197,7 @@ export default function () {
           )
       }
       function exitTrackStatus (sel) {
-        return sel.call(exit => exit.transition().duration(TR_TIME)
-          .style('opacity', 0)
+        return sel.call(exit => exit
           .remove())
       }
 
@@ -274,6 +285,7 @@ export default function () {
       // circles
       function enterCircleFn (sel) {
         sel.append('circle')
+          .attr('lap', d => d.lapNumber)
           .attr('cx', d => xScale(d.lapNumber))
           .attr('cy', d => yScale(d.delta))
           .attr('r', dimensions.width / 360) // maybe change this ratio
@@ -302,6 +314,7 @@ export default function () {
       function enterSquare (sel) {
         sel.append('rect')
           .attr('class', 'square')
+          .attr('lap', d => d.lapNumber)
           .attr('x', d => xScale(d.lapNumber) - dimensions.width / 360)
           .attr('y', d => yScale(d.delta) - dimensions.width / 360)
           .attr('width', dimensions.width / 180) // maybe change this ratio
@@ -333,7 +346,9 @@ export default function () {
           // .raise()
       }
       function exitSquare (sel) {
-        return sel.call(exit => exit.remove())
+        return sel.call(exit => {
+          exit.remove()
+        })
       }
 
       // TrackStatusLegend
@@ -445,6 +460,8 @@ export default function () {
 
       //
       updateData = function () {
+        console.log('linechart.js - updateData')
+        console.trace()
         xScale.domain(d3.extent(data.data, xAccessor))
         yScale.domain(d3.extent(data.data, yAccessor))
         xAxisContainer
@@ -506,13 +523,13 @@ export default function () {
   linechart.data = function (_) {
     if (!arguments.length) return data
     data = _
-    if (typeof updateData === 'function') updateData()
+    // if (typeof updateData === 'function') updateData()
     return linechart
   }
   linechart.results = function (_) {
     if (!arguments.length) return results
     results = _
-    if (typeof updateData === 'function') updateData()
+    // if (typeof updateData === 'function') updateData()
     return linechart
   }
   linechart.width = function (_) {
@@ -568,6 +585,12 @@ export default function () {
       .classed('linechart_yGridContainer', true)
 
     return { svg, bounds, xAxisContainer, xGridContainer, yAxisContainer, yGridContainer }
+  }
+  linechart.computeGraphData = function (laps) {
+    // Group the data based on the driver and compute the deltas
+    groupedData = d3.group(laps, d => d.driver)
+    data.computeDeltas(groupedData)
+    if (typeof updateData === 'function') updateData()
   }
   //
   return linechart

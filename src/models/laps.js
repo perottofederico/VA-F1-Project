@@ -3,7 +3,7 @@ import { drivers } from '../models'
 class Laps {
   constructor () {
     this.data = []
-    // this.onLapsListChanged = () => {}
+    this.onLapsListChanged = () => {}
   }
 
   addLap (lap) {
@@ -13,15 +13,66 @@ class Laps {
     // this.onLapsListChanged()
   }
 
+  //
+  bindLapsListChanged (callback) {
+    this.onLapsListChanged = callback
+  }
+
+  //
+  deleteData () {
+    this.data = []
+  }
+
+  // update driver laps after a bar click
+  reduceDriverLaps () {
+    const sbBounds = d3.select('.stackedBarchart_container').select('.contents')
+    const driverSelection = [...sbBounds.selectAll('rect[selected = true]')].map(d => d.__data__)
+    // Selected bars, grouped by driver
+    const groupedSelections = d3.group(driverSelection, d => d.driver)
+
+    // if no driver is selected (or all have been unselected), return the full data
+    if (!driverSelection.length) return this.data
+
+    // otherwise create a new set of laps to return by statrtin with the full data
+    // and removing the laps that are not in any of the selected stints
+    const newLaps = [...this.data]
+
+    const isInsideStint = (lap, stint) =>
+      (lap.lapNumber > stint.lap && lap.lapNumber <= stint.lap + stint.length)
+
+    const groupedLaps = d3.group(this.data, d => d.driver)
+    groupedSelections.forEach(driverStints => {
+      const driversLaps = groupedLaps.get(driverStints[0].driver)
+      driversLaps.forEach(lap => {
+        let toDelete = true
+        driverStints.forEach(stint => {
+          if (isInsideStint(lap, stint)) {
+            toDelete = false
+          }
+        })
+        if (toDelete) {
+          newLaps.splice(newLaps.indexOf(lap), 1)
+        }
+      })
+    })
+
+    //
+    console.log('Laps.js - new laps: ', newLaps)
+    return newLaps
+  }
+
   computeDeltas (groupedLaps) {
     // Find the winner
     // Drivers from results.csv are sorted by finishing order
     const winner = drivers.data[0].Abbreviation
+    const winnerLaps = this.data.filter(lap => lap.driver === winner)
     groupedLaps.forEach(driver => {
       driver.forEach(lap => {
         // get same lap number and its laptime from the winner
-        const winnerLap = groupedLaps.get(winner).find(winnerLap => winnerLap.lapNumber === lap.lapNumber)
-        const delta = Date.parse(lap.lapStartDate) - Date.parse(winnerLap.lapStartDate)
+        // I have to get the lap of the winner like this in case the laps of the winner
+        // get filtered out in the reduceDriverLaps function
+        const w = winnerLaps.filter(d => d.lapNumber === lap.lapNumber)
+        const delta = Date.parse(lap.lapStartDate) - Date.parse(w[0].lapStartDate)
         lap.delta = delta
       })
     })
@@ -46,27 +97,7 @@ class Laps {
     })
   }
 
-  //
-  // this function receives as parameter the grouped laps of a single driver
-  computeAvgLaptime (driverLaps) {
-    let totalLapTime = 0
-    let ignoredLaps = 0
-    if (driverLaps.length > 1) {
-      driverLaps.forEach(lap => {
-        console.log(lap.driver)
-        // only consider laps in which drivers are actually racing (i.e. track status is 1)
-        if (lap.lapTime !== null && lap.trackStatus === 1) {
-          // convert lap time to ms
-          totalLapTime = totalLapTime + this.laptimeToMilliseconds(lap.lapTime)
-        } else {
-          ignoredLaps += 1
-        }
-      })
-
-      return this.millisecondsToLaptime(totalLapTime / (driverLaps.length - ignoredLaps))
-    } else return 0
-  }
-
+  // Computes the average laptime and laptime consistency for a driver, used in the parallel coordinates
   computeMetrics (driverLaps) {
     //
     let avgLaptime = 0
@@ -76,7 +107,7 @@ class Laps {
     let totalLapTime = 0
     let ignoredLaps = 0
     if (driverLaps.length > 1) {
-      driverLaps.forEach(lap => {
+      driverLaps.forEach((lap) => {
         // only consider laps in which drivers are actually racing (i.e. track status is 1)
         if (lap.lapTime !== null && lap.trackStatus === 1) {
           // convert lap time to ms
@@ -93,7 +124,7 @@ class Laps {
 
       // Laptime Consistency (aka standard deviation)
       let sumOfSquaredDiffs = 0
-      driverLaps.forEach(lap => {
+      driverLaps.forEach((lap) => {
         if (lap.lapTime !== null && lap.trackStatus === 1) {
           sumOfSquaredDiffs += (this.laptimeToMilliseconds(lap.lapTime) - (avgLaptime)) ** 2
         }
@@ -101,7 +132,7 @@ class Laps {
       // Again, avoid edge cases where we end up dividing by zero
       if (driverLaps.length !== ignoredLaps) {
         const variance = sumOfSquaredDiffs / (driverLaps.length - ignoredLaps)
-        laptimeConsistency = (100 - (Math.sqrt(variance) * 100 / avgLaptime))
+        laptimeConsistency = (100 - ((Math.sqrt(variance) * 100) / avgLaptime))
       }
     }
     //
@@ -113,14 +144,15 @@ class Laps {
 
   //
   // Some laps are missing the lapTime. generally this is due to DNFs or red flags
-  //
-  // if lap.laptime is null, compute it using the lap.lapStartDate of the next lap
-  // unless there is no next lap, in which case the lap is ignored because it means
-  // that the driver either DNFed or the race ended
+  // Initially i wanted to fix laptimes because some tooltips would have to show null or NaN
+  // but fixing laptimes meant including some laps in computations only for some drivers and
+  // therefore skewing the results.
   fixMissingLapTimes (laps) {
-    // if lap.laptime is null, compute it using the lap.lapStartDate of the next lap
-    // if there is no next lap, the lap is ignored
+    /*
     laps.forEach(lap => {
+      // if lap.laptime is null, compute it using the lap.lapStartDate of the next lap
+      // unless there is no next lap, in which case the lap is ignored because it means
+      // that the driver either DNFed or the race ended
       if (!lap.lapTime) {
         const nextLap = laps.find(l => l.lapNumber === lap.lapNumber + 1 && l.driver === lap.driver)
         if (nextLap) {
@@ -130,6 +162,14 @@ class Laps {
       } else {
         // For some reason some laptimes don't include the milliseconds.
         // This if statement handles that case.
+        if (lap.lapTime.includes('.')) lap.lapTime = lap.lapTime.slice(10, -3)
+        else lap.lapTime = lap.lapTime.slice(10).concat('.000')
+      }
+    })
+    */
+
+    laps.forEach(lap => {
+      if (lap.lapTime) {
         if (lap.lapTime.includes('.')) lap.lapTime = lap.lapTime.slice(10, -3)
         else lap.lapTime = lap.lapTime.slice(10).concat('.000')
       }
@@ -172,16 +212,6 @@ class Laps {
       })
     })
     return graphData
-  }
-
-  //
-  bindLapsListChanged (callback) {
-    this.onLapsListChanged = callback
-  }
-
-  //
-  deleteData () {
-    this.data = []
   }
 }
 

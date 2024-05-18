@@ -23,6 +23,8 @@ export default function () {
     }
   }
 
+  let onBarClick = _ => {}
+
   function mouseover (event, d) {
     d3.select('#root')
       .append('div')
@@ -36,7 +38,7 @@ export default function () {
       <br> 
       <span> Compound: ${d.compound}</span>
     `)
-
+    /*
     // Highlight corresponding laps in linechart
     const secondDriver = isSecondDriver(d.driver)
     if (secondDriver) {
@@ -45,18 +47,20 @@ export default function () {
       elems.style('opacity', datum =>
         datum.lapNumber >= d.lap && datum.lapNumber <= (d.lap + d.length) ? 1 : 0.1
       )
-      elems.raise()
+      // elems.raise()
     } else {
       const elems = d3.select('.linechart_container').select('.linechart')
         .select('.contents').selectAll('circle#' + d.driver)
       elems.style('opacity', datum =>
         datum.lapNumber <= (d.lap + d.length) && datum.lapNumber >= d.lap ? 1 : 0.1
       )
-      elems.raise()
+      // elems.raise()
     }
+    */
   }
   function mouseleave (event, d) {
     d3.selectAll('.tooltip').remove()
+    /*
     const selectedDrivers = drivers.data.map(d => d.Abbreviation)
       .filter(driver => d3.select('.drivers_legend').select('#' + driver).attr('selected') === 'true')
     if (d3.select('.drivers_legend').select('#' + d.driver).attr('selected') === 'true' || selectedDrivers.length === 0) {
@@ -66,6 +70,7 @@ export default function () {
       d3.select('.linechart_container').select('.linechart').selectAll('#' + d.driver)
         .style('opacity', 0.1)
     }
+    */
   }
   function mousemove (event, d) {
     d3.select('.tooltip')
@@ -89,7 +94,7 @@ export default function () {
       const yScale = d3.scaleBand()
         .domain(d3.map(d3.sort(drivers.data, d => d.TeamName), d => d.Abbreviation))
         .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
-        .padding(0.3)
+        .padding(0.2)
 
       //
       xAxisContainer.transition().duration(TR_TIME).call(d3.axisBottom(xScale))
@@ -103,7 +108,7 @@ export default function () {
 
       //
       function dataJoin () {
-        bounds.selectAll('rect')
+        bounds.selectAll('g.bar')
           .data(graphData)
           .join(enterRect, updateRect, exitRect)
 
@@ -115,32 +120,55 @@ export default function () {
 
       //
       function enterRect (sel) {
-        return sel.append('rect')
+        const g = sel.append('g')
+          .attr('class', 'bar')
+          .attr('id', d => d.driver)
+
+        g.append('rect')
           .attr('x', d => xScale(d.lap))
           .attr('y', d => yScale(d.driver))
           .attr('height', yScale.bandwidth())
           .attr('width', d => xScale(d.length))
           .attr('id', d => d.driver)
-          // move this to utils?
           .attr('fill', d => compoundToColor(d.compound))
+          .attr('selected', 'false')
           .style('stroke', '#282828')
           .style('stroke-width', 2)
           .on('mouseover', mouseover)
           .on('mouseleave', mouseleave)
           .on('mousemove', mousemove)
+          .on('click', (e) => onBarClick(e))
+
+        g.append('text').text(d => d.length)
+          .attr('x', d => xScale(d.lap) + xScale(d.length) / 2)
+          .attr('y', d => yScale(d.driver) + yScale.bandwidth() * 0.8)
+          .style('text-anchor', 'middle')
+          .style('font-size', yScale.bandwidth() + 'px')
+          .style('font-weight', 700)
+          .style('pointer-events', 'none')
       }
       function updateRect (sel) {
-        return sel
-          .call(update => update.transition().duration(TR_TIME)
-            .attr('x', d => xScale(d.lap))
-            .attr('y', d => yScale(d.driver))
-            .attr('height', yScale.bandwidth())
-            .attr('width', d => xScale(d.length))
-            .attr('id', d => d.driver)
-            .attr('fill', d => compoundToColor(d.compound))
-            .style('stroke', '#282828')
-            .style('stroke-width', 2)
-          )
+        sel.attr('id', d => d.driver)
+
+        const rect = sel.select('rect').attr('id', d => d.driver)
+        rect.call(update => update.transition().duration(TR_TIME)
+          .attr('x', d => xScale(d.lap))
+          .attr('y', d => yScale(d.driver))
+          .attr('height', yScale.bandwidth())
+          .attr('width', d => xScale(d.length))
+          .attr('id', d => d.driver)
+          .attr('fill', d => compoundToColor(d.compound))
+          .style('stroke', '#282828')
+          .style('stroke-width', 2)
+        )
+
+        const text = sel.select('text')
+        text.call(update => update.transition().duration(TR_TIME)
+          .text(d => d.length)
+          .attr('x', d => xScale(d.lap) + xScale(d.length) / 2)
+          .attr('y', d => yScale(d.driver) + yScale.bandwidth() * 0.8)
+          .style('font-size', yScale.bandwidth() + 'px')
+        )
       }
       function exitRect (sel) {
         sel.call(exit => exit
@@ -157,6 +185,7 @@ export default function () {
         const g = sel.append('g')
           .attr('class', 'legend')
           .attr('id', d => d)
+
         g.append('rect')
           .attr('x', (d, i) => dimensions.margin.left + 90 * i)
           .attr('y', 45)
@@ -164,6 +193,7 @@ export default function () {
           .attr('height', yScale.bandwidth())
           .style('opacity', 1)
           .style('fill', d => compoundToColor(d))
+
         g.append('text')
           .attr('x', (d, i) => dimensions.margin.left + 90 * i + 25)
           .attr('y', 55)
@@ -173,12 +203,14 @@ export default function () {
       }
       function updateLegend (sel) {
         sel.attr('id', d => d)
+
         const rect = sel.select('rect')
         rect.call(update => update.transition().duration(TR_TIME)
           .attr('x', (_d, i) => dimensions.margin.left + 90 * i)
           .attr('y', 45)
           .style('fill', d => compoundToColor(d))
         )
+
         const text = sel.select('text')
         text.call(update => update.transition().duration(TR_TIME)
           .attr('x', (_d, i) => dimensions.margin.left + 90 * i + 25)
@@ -205,7 +237,7 @@ export default function () {
           .transition()
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale))
-        dataJoin()
+        // dataJoin()
       }
       updateWidth = function () {
         xScale.range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
@@ -288,6 +320,9 @@ export default function () {
 
     return { svg, bounds, xAxisContainer, yAxisContainer }
   }
+
+  //
+  stackedBarchart.bindBarClick = callback => onBarClick = callback
 
   return stackedBarchart
 }

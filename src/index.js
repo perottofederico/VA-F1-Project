@@ -12,7 +12,7 @@ async function init () {
   setupPage()
 
   // Wait for data to be loaded
-  await updateData()
+  await updateRace()
 
   // Window resize listener
   window.addEventListener('resize', _ => {
@@ -31,7 +31,7 @@ function setupPage () {
     .append('select')
     .attr('id', 'selectButton')
     .attr('class', 'selection')
-    .on('change', () => updateData())
+    .on('change', () => updateRace())
   selectMenu.selectAll('option')
     .data(list).enter()
     .append('option')
@@ -88,13 +88,28 @@ function setupPage () {
   const scatterPlotContainer = d3.select('#root').append('div')
     .attr('class', 'scatterPlot_container')
     .attr('id', 'scatterPlot_container')
+    .style('float', 'left')
+  const options = ['All Laps', "Drivers' Centroids"]
+  const s = scatterPlotContainer.append('div')
+    .style('float', 'right')
+    .append('select')
+    .attr('id', 'scatterPlotSelect')
+    .style('margin-top', '10px')
+    .style('margin-right', '10px')
+    .on('change', () => controller.handleSelectChange(d3.select('#scatterPlotSelect').node().value))
+  s.selectAll('option')
+    .data(options).enter()
+    .append('option')
+    .attr('value', d => d)
+    .text(d => d)
+
   controller.scatterPlot
     .width(scatterPlotContainer.node().getBoundingClientRect().width)
     .height(scatterPlotContainer.node().getBoundingClientRect().height)
     .initChart(scatterPlotContainer)
 }
 
-async function updateData () {
+async function updateRace () {
   controller.deleteAllData()
   const round = d3.select('.selection').node().value
   try {
