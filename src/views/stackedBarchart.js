@@ -34,7 +34,7 @@ export default function () {
       .style('border-width', '3px')
       .html(`<span style = "color:${getTeamColor(d.team)}; font-weight: 500; font-size: 15;">${d.driver}</span> - Stint #${d.stint}
       <br> 
-      <span>Laps: ${(d.lap)} to ${(d.lap + d.length)}</span>
+      <span>Laps: ${(d.lap + 1)} to ${(d.lap + d.length)}</span>
       <br> 
       <span> Compound: ${d.compound}</span>
     `)

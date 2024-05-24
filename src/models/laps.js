@@ -55,9 +55,6 @@ class Laps {
         }
       })
     })
-
-    //
-    console.log('Laps.js - new laps: ', newLaps)
     return newLaps
   }
 
@@ -107,9 +104,11 @@ class Laps {
     let totalLapTime = 0
     let ignoredLaps = 0
     if (driverLaps.length > 1) {
+      const avg = d3.mean(driverLaps, d => this.laptimeToMilliseconds(d.lapTime))
+      console.log(driverLaps[0].driver, this.millisecondsToLaptime(avg * 1.3))
       driverLaps.forEach((lap) => {
         // only consider laps in which drivers are actually racing (i.e. track status is 1)
-        if (lap.lapTime !== null && lap.trackStatus === 1) {
+        if (lap.lapTime !== null && lap.trackStatus === 1 && this.laptimeToMilliseconds(lap.lapTime) < avg * 1.3) {
           // convert lap time to ms
           totalLapTime += this.laptimeToMilliseconds(lap.lapTime)
         } else {
@@ -122,10 +121,10 @@ class Laps {
         avgLaptime = totalLapTime / (driverLaps.length - ignoredLaps)
       } else avgLaptime = 0
 
-      // Laptime Consistency (aka standard deviation)
+      // Laptime Consistency (aka 1 - coefficient of variation in percentage)
       let sumOfSquaredDiffs = 0
       driverLaps.forEach((lap) => {
-        if (lap.lapTime !== null && lap.trackStatus === 1) {
+        if (lap.lapTime !== null && lap.trackStatus === 1 && this.laptimeToMilliseconds(lap.lapTime) < avg * 1.3) {
           sumOfSquaredDiffs += (this.laptimeToMilliseconds(lap.lapTime) - (avgLaptime)) ** 2
         }
       })
@@ -148,7 +147,6 @@ class Laps {
   // but fixing laptimes meant including some laps in computations only for some drivers and
   // therefore skewing the results.
   fixMissingLapTimes (laps) {
-    /*
     laps.forEach(lap => {
       // if lap.laptime is null, compute it using the lap.lapStartDate of the next lap
       // unless there is no next lap, in which case the lap is ignored because it means
@@ -166,26 +164,24 @@ class Laps {
         else lap.lapTime = lap.lapTime.slice(10).concat('.000')
       }
     })
-    */
 
+    /*
     laps.forEach(lap => {
       if (lap.lapTime) {
         if (lap.lapTime.includes('.')) lap.lapTime = lap.lapTime.slice(10, -3)
         else lap.lapTime = lap.lapTime.slice(10).concat('.000')
       }
     })
+    */
   }
 
   laptimeToMilliseconds (lapTime) {
-    const minutes = parseInt(lapTime.split(':')[0])
-    const seconds = parseInt(lapTime.split(':')[1].split('.')[0])
-    let ms = 0
-    // For some reason some laptimes don't include the milliseconds.
-    // This if statement handles that case.
-    if (lapTime.split(':')[1].includes('.')) {
-      ms = parseInt(lapTime.split('.')[1])
+    if (lapTime) {
+      const minutes = parseInt(lapTime.split(':')[0])
+      const seconds = parseInt(lapTime.split(':')[1].split('.')[0])
+      const ms = parseInt(lapTime.split('.')[1])
+      return minutes * 60000 + seconds * 1000 + ms
     }
-    return minutes * 60000 + seconds * 1000 + ms
   }
 
   millisecondsToLaptime (ms) {

@@ -77,11 +77,11 @@ export function isSecondDriver (abbreviation) {
 // Convert an int representing the track status into a color hex
 export function trackStatusToColor (trackStatus) {
   switch (trackStatus % 10) {
-    case 2: return d3.schemeSet3[11] // yellow for yellow flag
-    case 4: return d3.schemeSet3[5] // orange for safety car
-    case 5: return d3.schemeSet3[3] // red for red flag
-    case 6: return d3.schemeSet3[1] // white for VSC
-    case 7: return d3.schemeSet3[1] // white for VSC (ending)
+    case 2: return '#feedde' // d3.schemeSet3[11] // for yellow flag
+    case 4: return '#fd8d3c' // d3.schemeSet3[5] // for safety car
+    case 5: return '#d94701' // d3.schemeSet3[3] // for red flag
+    case 6: return '#fdbe85' // d3.schemeSet3[1] // for VSC
+    case 7: return '#fdbe85' // d3.schemeSet3[1] // for VSC (ending)
   }
 }
 
@@ -98,12 +98,13 @@ export function trackStatusToString (trackStatus) {
 
 // convert a 'compound' string into a color hex
 export function compoundToColor (compound) {
+  // https://colorbrewer2.org/index.html?type=testtype&scheme=TestMap&n=3#type=qualitative&scheme=Accent&n=5
   switch (compound) {
-    case 'SOFT': return '#dd0741'
-    case 'MEDIUM': return '#F8D500'
-    case 'HARD': return '#eee'
-    case 'INTERMEDIATE': return '#44D745'
-    case 'WET': return '#005AFF'
+    case 'SOFT': return '#fdc086' // '#dd0741'
+    case 'MEDIUM': return '#ffff99' // '#F8D500'
+    case 'HARD': return '#beaed4' // '#eee'
+    case 'INTERMEDIATE': return '#7fc97f' // '#44D745'
+    case 'WET': return '#386cb0' // '#005AFF'
   }
 }
 
@@ -122,6 +123,7 @@ export function getContextualData (axis, driver) {
 
 // Function to handle multiple selections
 export function handleSelection () {
+  console.trace()
   // A list of all the drivers
   const allDrivers = [...d3.select('.drivers_legend').select('g').selectAll('g')].map(driver => driver.id)
   const totalDrivers = allDrivers.length
@@ -245,17 +247,19 @@ export function handleSelection () {
   sbData.each(stint => {
     const secondDriver = isSecondDriver(stint.driver)
     if (secondDriver) {
-      d3.select('.linechart_container').select('.linechart').select('.contents')
+      d3.select('.scatterPlot_container').select('.contents')
         .selectAll(`rect#${stint.driver}`).filter(d => {
-          return d.lapNumber <= stint.lap || d.lapNumber > stint.lap + stint.length
+          return parseInt(d.LapNumber) <= stint.lap || parseInt(d.LapNumber) > stint.lap + stint.length
         })
         .style('opacity', 0)
+        .style('pointer-events', 'none')
     } else {
-      d3.select('.linechart_container').select('.linechart').select('.contents')
+      d3.select('.scatterPlot_container').select('.contents')
         .selectAll(`circle#${stint.driver}`).filter(d => {
-          return d.lapNumber <= stint.lap || d.lapNumber > stint.lap + stint.length
+          return parseInt(d.LapNumber) <= stint.lap || parseInt(d.LapNumber) > stint.lap + stint.length
         })
         .style('opacity', 0)
+        .style('pointer-events', 'none')
     }
   })
 }

@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
+import { getTeamColor, isSecondDriver, TR_TIME, handleSelection } from '../utils'
 
 export default function () {
   let data = []
@@ -45,7 +45,6 @@ export default function () {
   function scatterPlot (selection) {
     selection.each(function () {
       graphData = data.data
-      console.log('scatterPlot.js - graphData: ', graphData)
       const xScale = d3.scaleLinear()
         .domain(d3.extent(graphData, xAccessor))
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
@@ -65,7 +64,7 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('circle')
-          .data(graphData.filter(d => !isSecondDriver(d.Driver)), d => d.Driver)
+          .data(graphData.filter(d => !isSecondDriver(d.Driver)))
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
         bounds.selectAll('.square')
           .data(graphData.filter(d => isSecondDriver(d.Driver)))
@@ -240,7 +239,6 @@ export default function () {
     } else {
       graphData = data.computeGraphData(data.data)
     }
-    console.log('scatterPlot.js - graphData: ', graphData)
     if (typeof updateData === 'function') updateData()
   }
   //

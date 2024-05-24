@@ -27,7 +27,9 @@ class Telemetry {
         }
       }
     })
-    if (divisor > 0) { return parseFloat((total / divisor).toFixed(2)) } else return 0
+    if (divisor > 0) {
+      return parseFloat((total / divisor).toFixed(2))
+    } else { return 0 }
   }
 
   //

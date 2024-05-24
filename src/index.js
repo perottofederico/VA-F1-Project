@@ -135,7 +135,7 @@ async function updateRace () {
     })
 
     // PCA.csv
-    const pca = await d3.csv(`data/${round}/PCA.csv`)
+    const pca = await d3.csv(`data/${round}/tSNE.csv`)
     pca.forEach(row => {
       controller.handleAddRow(row)
     })
@@ -146,6 +146,8 @@ async function updateRace () {
   controller.handleRaceChanged()
 
   resetAllFilters()
+  // Reset the select menu in scatterplot to it's first value
+  d3.select('#scatterPlotSelect').property('selectedIndex', 0)
   populateViews()
 }
 

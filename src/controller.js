@@ -1,5 +1,6 @@
 import { laps, drivers, pitStops, telemetry, pca } from './models'
 import { drivers_legend, linechart, parallel_coordinates, stackedBarchart, scatterPlot } from './views'
+import { handleSelection } from './utils'
 
 class Controller {
   constructor () {
@@ -35,8 +36,8 @@ class Controller {
   }
 
   handleBarClick (e) {
-    console.log('bar clicked')
     this.handleUpdateDriverLaps(e)
+    handleSelection()
   }
 
   handleUpdateDriverLaps (e) {
@@ -47,16 +48,12 @@ class Controller {
       e.srcElement.attributes.selected.value = 'true'
     }
     // create a new set of laps
-    console.log('creating new laps set')
     const newLaps = this.laps.reduceDriverLaps()
-    console.log('redrawing parallel coordinates')
     this.parallel_coordinates.computeGraphData(newLaps)
     this.linechart.computeGraphData(newLaps)
   }
 
   handleSelectChange (d) {
-    console.log('select changed')
-    console.log(d)
     this.scatterPlot.computeGraphData(d)
   }
 

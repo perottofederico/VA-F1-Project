@@ -142,31 +142,24 @@ export default function () {
           .data(groupedData.values(), d => d[0].driver)
           .join(enterFn, updateFn, exitFn)
 
-        // Add the dots on top of the linechart
-        // I changed the data binding because it's easier this way
-        // but i wonder if there's a way to chain the scatter and line plot
-        bounds.selectAll('circle')
-          // use circles for first drivers
-          .data((data.data).filter(d => !isSecondDriver(d.driver)))
+        // Add circles for each lap of 'first' drivers
+        bounds.selectAll('g.circles')
+          .data(groupedData.values().filter(d => !isSecondDriver(d.driver)))
+          .join('g')
+          .attr('class', 'circles')
+          .attr('id', d => d[0].driver)
+          .selectAll('circle')
+          .data(d => d)
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
-
-        bounds.selectAll('.square')
-          // use squares for second drivers
-          .data((data.data).filter(d => isSecondDriver(d.driver)))
-          .join(enterSquare, updateSquare, exitSquare)
-        /*
-        // This is the way to do it if I want to use the grouped data
-        // which would have been smarter, but now i'm stuck with this
-        // and i will find a way to use opacity to filter what i don't want
+        // Add squares for each lap of 'second' drivers
         bounds.selectAll('g.squares')
           .data(groupedData.values().filter(d => isSecondDriver(d[0].driver)), d => (d[0].driver))
-          .enter().append('g')
+          .join('g')
           .attr('class', 'squares')
           .attr('id', d => d[0].driver)
           .selectAll('rect.square')
-          .data(d => d, d => d.lapNumber)
+          .data(d => d)
           .join(enterSquare, updateSquare, exitSquare)
-         */
 
         // after updating, some elements ended up behind new elements (i.e. new rectangles)
         // this re-inserts each selected element, in order, as the first child of its parent
@@ -459,9 +452,7 @@ export default function () {
       }
 
       //
-      updateData = function () {
-        console.log('linechart.js - updateData')
-        console.trace()
+      updateData = function (src) {
         xScale.domain(d3.extent(data.data, xAccessor))
         yScale.domain(d3.extent(data.data, yAccessor))
         xAxisContainer
@@ -471,7 +462,7 @@ export default function () {
         yAxisContainer
           .transition()
           .duration(TR_TIME)
-          .call(d3.axisLeft(yScale))
+          .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
         dataJoin()
       }
 
@@ -506,10 +497,10 @@ export default function () {
         yAxisContainer
           .transition()
           .duration(TR_TIME)
-          .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S.%L')))
+          .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
 
         yScaleCopy = yScale.copy()
-        svg.call(zoom)
+        // svg.call(zoom)
 
         clip
           .attr('width', dimensions.width - dimensions.margin.right)

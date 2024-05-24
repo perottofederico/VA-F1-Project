@@ -23,7 +23,7 @@ export default function () {
     margin: {
       top: 70,
       right: 50,
-      bottom: 50,
+      bottom: 40,
       left: 80
     }
   }
@@ -204,7 +204,7 @@ export default function () {
 
             g.append('text')
               .attr('x', xScale(key) + dimensions.margin.left)
-              .attr('y', dimensions.height - 20)
+              .attr('y', dimensions.height - 10)
               .text('Reset zoom')
               .style('fill', '#ffffff')
               .style('font-size', 14)
@@ -442,7 +442,7 @@ export default function () {
               .attr('y', dimensions.height - dimensions.margin.bottom + 15)
             d3.select(this).select('text')
               .transition().duration(TR_TIME)
-              .attr('y', dimensions.height - 20)
+              .attr('y', dimensions.height - 10)
           })
 
         brush.extent([[-45, -5], [45, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
