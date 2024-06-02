@@ -11,14 +11,19 @@ class PitStops {
     // this.onPitStopsListChanged()
   }
 
-  computeMetrics (lastName) {
+  computeMetrics (lastName, driverLaps) {
     let totalTime = 0
-    this.data.forEach(d => {
-      if (d.lastName.toLowerCase() === lastName.toLowerCase()) {
-        totalTime += d.time
-      }
+
+    const lapList = driverLaps.map(d => d.lapNumber)
+    const pitStops = this.data.filter(d =>
+      d.lastName.toLowerCase() === lastName.toLowerCase() &&
+      lapList.includes(parseInt(d.lapNumber))
+    )
+
+    pitStops.forEach(d => {
+      totalTime += d.time
     })
-    return parseFloat(totalTime.toFixed(2))
+    return totalTime
   }
 
   //

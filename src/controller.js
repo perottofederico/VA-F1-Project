@@ -50,7 +50,7 @@ class Controller {
     // create a new set of laps
     const newLaps = this.laps.reduceDriverLaps()
     this.parallel_coordinates.computeGraphData(newLaps)
-    this.linechart.computeGraphData(newLaps)
+    this.linechart.computeGraphData(newLaps, 'barClick')
   }
 
   handleSelectChange (d) {

@@ -453,8 +453,10 @@ export default function () {
 
       //
       updateData = function (src) {
+        console.trace()
         xScale.domain(d3.extent(data.data, xAccessor))
-        yScale.domain(d3.extent(data.data, yAccessor))
+        // yScale.domain(d3.extent(data.data, yAccessor))
+        yScale.domain([d3.min(groupedData.values(), d => d3.min(d, yAccessor)), d3.max(groupedData.values(), d => d3.max(d, yAccessor))])
         xAxisContainer
           .transition()
           .duration(TR_TIME)
@@ -463,6 +465,10 @@ export default function () {
           .transition()
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
+        yScaleCopy = yScale.copy()
+        console.log(d3.zoomTransform(svg.node()))
+        if (src === 'barClick') svg.call(zoom.scaleTo, d3.zoomTransform(svg.node()).k)
+        else svg.call(zoom.transform, d3.zoomIdentity)
         dataJoin()
       }
 
@@ -577,11 +583,11 @@ export default function () {
 
     return { svg, bounds, xAxisContainer, xGridContainer, yAxisContainer, yGridContainer }
   }
-  linechart.computeGraphData = function (laps) {
+  linechart.computeGraphData = function (laps, src) {
     // Group the data based on the driver and compute the deltas
     groupedData = d3.group(laps, d => d.driver)
     data.computeDeltas(groupedData)
-    if (typeof updateData === 'function') updateData()
+    if (typeof updateData === 'function') updateData(src)
   }
   //
   return linechart

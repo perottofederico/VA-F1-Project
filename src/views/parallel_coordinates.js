@@ -557,7 +557,7 @@ export default function () {
     // Group the laps
     const groupedLaps = d3.group(setOfLaps, d => d.driver)
     groupedLaps.forEach(d => {
-      if (d.length > 1) {
+      if (d.length > 1) { // >2 if we want to get rid of some edge cases
       // compute the metrics based on the laps data
         const lapsMetrics = laps.computeMetrics(d)
 
@@ -565,7 +565,7 @@ export default function () {
         // So I use the results data to go from the abbreviation to the last name of each driver
         // and then I compute the pitstop data (i.e. total pitstop time)
         const lastName = drivers.data.find(n => n.Abbreviation === d[0].driver).LastName
-        const pitStopsMetrics = pitStops.computeMetrics(lastName)
+        const pitStopsMetrics = pitStops.computeMetrics(lastName, d)
 
         // Compute the metrics based on the results (positions gained / lost)
         const resultsMetrics = drivers.computeMetrics(lastName)
@@ -590,7 +590,7 @@ export default function () {
           AvgSpeed: 0,
           startingPos: resultsMetrics.startingPos,
           finishingPos: resultsMetrics.finishingPos,
-          PositionsGained: resultsMetrics.result
+          PositionsGained: lapsMetrics.positionsGained // resultsMetrics.result
         })
       }
     })

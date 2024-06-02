@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 import { onClick } from './views/eventHandlers'
-export const TR_TIME = 350
+export const TR_TIME = 500
 export const EPSILON = 0.000001
 
 export function sentenceString (s) {

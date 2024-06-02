@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor, isSecondDriver, TR_TIME, handleSelection } from '../utils'
+import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
 
 export default function () {
   let data = []
@@ -26,17 +26,20 @@ export default function () {
   }
 
   function onEnter (e, d) {
-    d3.select('#root')
+    const tooltip = d3.select('#root')
       .append('div')
       .attr('class', 'tooltip')
       .style('border', isSecondDriver(d.Driver) ? 'dashed' : 'solid')
       .style('border-color', getTeamColor(d.Team))
-      .style('left', e.x - 100 + 'px')
-      .style('top', e.y - 50 + 'px')
+      .style('left', e.x - 50 + 'px')
+      .style('top', e.y - 40 + 'px')
       .style('border-width', '3px')
-      .html(`<span style = "color:${getTeamColor(d.Team)}; font-weight: 500; font-size: 15;">${d.Driver}</span> - Lap #${d.LapNumber}
-      
-    `)
+    if (d3.select('#scatterPlotSelect').node().value === 'All Laps') {
+      tooltip.html(`<span style = "color:${getTeamColor(d.Team)}; font-weight: 500; font-size: 15;">${d.Driver}</span> 
+      - Lap ${parseInt(d.LapNumber)}`)
+    } else {
+      tooltip.html(`<span style = "color:${getTeamColor(d.Team)}; font-weight: 500; font-size: 15;">${d.Driver}</span>`)
+    }
   }
   function onLeave (e, d) {
     d3.selectAll('.tooltip').remove()
@@ -64,10 +67,10 @@ export default function () {
       //
       function dataJoin () {
         bounds.selectAll('circle')
-          .data(graphData.filter(d => !isSecondDriver(d.Driver)))
+          .data(graphData.filter(d => !isSecondDriver(d.Driver)), d => d.LapNumber)
           .join(enterCircleFn, updateCircleFn, exitCircleFn)
         bounds.selectAll('.square')
-          .data(graphData.filter(d => isSecondDriver(d.Driver)))
+          .data(graphData.filter(d => isSecondDriver(d.Driver)), d => d.LapNumber)
           .join(enterSquareFn, updateSquareFn, exitSquareFn)
       }
       dataJoin()

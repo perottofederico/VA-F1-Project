@@ -105,7 +105,6 @@ class Laps {
     let ignoredLaps = 0
     if (driverLaps.length > 1) {
       const avg = d3.mean(driverLaps, d => this.laptimeToMilliseconds(d.lapTime))
-      console.log(driverLaps[0].driver, this.millisecondsToLaptime(avg * 1.3))
       driverLaps.forEach((lap) => {
         // only consider laps in which drivers are actually racing (i.e. track status is 1)
         if (lap.lapTime !== null && lap.trackStatus === 1 && this.laptimeToMilliseconds(lap.lapTime) < avg * 1.3) {
@@ -135,9 +134,19 @@ class Laps {
       }
     }
     //
+
+    // Compute the positions gained or lost by the driver
+    let startingPosition = driverLaps[0].position
+    if (driverLaps[0].lapNumber === 1) startingPosition = drivers.data.find(d => d.Abbreviation === driverLaps[0].driver).GridPosition
+    const finalPosition = driverLaps[driverLaps.length - 1].position
+    const finishStatus = drivers.data.find(d => d.Abbreviation === driverLaps[0].driver).Status
+    const positionsGained = finishStatus === 'Finished' || finishStatus.includes('Lap')
+      ? startingPosition - finalPosition
+      : startingPosition - drivers.data.find(d => d.Abbreviation === driverLaps[0].driver).Position
     return {
       avgLaptime,
-      laptimeConsistency
+      laptimeConsistency,
+      positionsGained
     }
   }
 
@@ -164,15 +173,6 @@ class Laps {
         else lap.lapTime = lap.lapTime.slice(10).concat('.000')
       }
     })
-
-    /*
-    laps.forEach(lap => {
-      if (lap.lapTime) {
-        if (lap.lapTime.includes('.')) lap.lapTime = lap.lapTime.slice(10, -3)
-        else lap.lapTime = lap.lapTime.slice(10).concat('.000')
-      }
-    })
-    */
   }
 
   laptimeToMilliseconds (lapTime) {
