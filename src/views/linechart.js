@@ -512,7 +512,7 @@ export default function () {
         .call(brush.move, contextYScale.range())
       //
 
-      function brushed (e, d) {
+      function brushed (e, _d) {
         if (e.selection === null || e.selection[0] === e.selection[1]) {
           context.call(brush.move, yScale.range())
         }

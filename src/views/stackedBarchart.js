@@ -12,6 +12,7 @@ export default function () {
   let title
   let xAxisContainer
   let yAxisContainer
+  let yScale
   const dimensions = {
     width: 800,
     height: 400,
@@ -26,7 +27,7 @@ export default function () {
   let onBarClick = _ => {}
 
   function mouseover (event, d) {
-    d3.select('#root')
+    d3.select('.stackedBarchart_container')
       .append('div')
       .attr('class', 'tooltip')
       .style('border', isSecondDriver(d.driver) ? 'dashed' : 'solid')
@@ -74,8 +75,8 @@ export default function () {
   }
   function mousemove (event, d) {
     d3.select('.tooltip')
-      .style('left', event.x - 55 + 'px')
-      .style('top', event.y - 75 + 'px')
+      .style('left', event.x + 'px')
+      .style('top', yScale(d.driver) + dimensions.height + dimensions.margin.bottom - yScale.bandwidth() + 'px')
   }
 
   function stackedBarchart (selection) {
@@ -91,7 +92,7 @@ export default function () {
         .domain([0, groupedLaps.get(drivers.data[0].Abbreviation).length])
         .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
 
-      const yScale = d3.scaleBand()
+      yScale = d3.scaleBand()
         .domain(d3.map(d3.sort(drivers.data, d => d.TeamName), d => d.Abbreviation))
         .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
         .padding(0.2)

@@ -58,7 +58,6 @@ class Controller {
   }
 
   onLapsListChanged () {
-    console.trace('onLapsListChanged')
     this.parallel_coordinates.computeGraphData(this.laps.currData, 'sliderChange')
     // this.linechart.data(this.laps)
     // this.parallel_coordinates.laps(this.laps)

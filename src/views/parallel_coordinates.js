@@ -561,8 +561,6 @@ export default function () {
       .style('font-size', 12)
   }
   parallel_coordinates.computeGraphData = async function (setOfLaps, src) {
-    console.trace()
-
     // This removes the grey brush area as soon as the selection has been done
     if (brush) {
       svg.selectAll('.parallelCoordinates_yAxisContainer')
