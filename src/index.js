@@ -26,7 +26,10 @@ function setupPage () {
   const menuContainer = d3.select('#root').append('div')
     .attr('class', 'header')
 
-  const selectMenu = menuContainer.html('Select a race: ')
+  const selectMenu = menuContainer
+    .append('div')
+    .attr('class', 'dropDownRace')
+    .html('Select a race: ')
     .style('font-size', '20px')
     .append('select')
     .attr('id', 'selectButton')
@@ -39,12 +42,49 @@ function setupPage () {
     .text(d => d.replace('_', ': '))
 
   // Reset filters button
-  menuContainer.append('button')
+  menuContainer
+    .append('div')
+    .attr('class', 'resetButton')
+    .append('button')
     .style('left', '100px')
     .style('position', 'relative')
     .text('Reset All Filters')
     .style('font-size', '16px')
     .on('click', resetAllFilters)
+
+  // div for filters
+  const filtersDiv = menuContainer.append('div')
+    .attr('class', 'filters')
+
+  // slider for minimum laps
+  filtersDiv.append('label').text('Minimum Laps: ')
+    .style('font-size', '16px')
+    .style('left', '10px')
+    .style('position', 'relative')
+    .attr('class', 'lapsSliderLabel')
+  filtersDiv.append('input')
+    .attr('type', 'range')
+    .attr('class', 'lapsSliderRange')
+    .attr('step', 1)
+    .attr('value', 1)
+    .on('input', _ => d3.select('.lapsSliderValue').text(d3.select('.lapsSliderRange').node().value))
+    .on('change', _ => controller.onLapsSliderChange())
+  filtersDiv.append('span')
+    .attr('class', 'lapsSliderValue')
+    .text('1')
+
+  // checkbox for fuel corrected lap times
+  filtersDiv.append('label').text('Use Fuel Corrected Lap Times: ')
+    .style('font-size', '16px')
+    .style('left', '10px')
+    .style('position', 'relative')
+    .attr('class', 'fuelCorrectionLabel')
+  filtersDiv.append('input')
+    .attr('type', 'checkbox')
+    .attr('class', 'fuelCorrectionCheckbox')
+    .on('change', _ => {
+      controller.onFuelCorrectionChange(d3.select('.fuelCorrectionCheckbox').property('checked'))
+    })
 
   // Containers for views
   const linechartContainer = d3.select('#root').append('div')
@@ -127,6 +167,7 @@ async function updateRace () {
     lapsData.forEach(lap => {
       controller.handleAddLap(formatLap(lap))
     })
+    controller.laps.currData = controller.laps.data
 
     // Pitstops.csv
     const pitStops = await d3.csv(`data/${round}/pitstops.csv`)
@@ -148,6 +189,11 @@ async function updateRace () {
   resetAllFilters()
   // Reset the select menu in scatterplot to it's first value
   d3.select('#scatterPlotSelect').property('selectedIndex', 0)
+  d3.select('.lapsSliderRange')
+    .attr('min', 1)
+    .attr('max', d3.max(controller.laps.data, d => d.lapNumber) - 1)
+
+  d3.select('.lapsSlider').append('label').text('1')
   populateViews()
 }
 

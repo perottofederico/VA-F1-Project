@@ -1,8 +1,10 @@
 import * as d3 from 'd3'
 import { drivers } from '../models'
+import { MAX_FUEL, MS_LOSS_PER_KG } from '@/utils'
 class Laps {
   constructor () {
     this.data = []
+    this.currData = []
     this.onLapsListChanged = () => {}
   }
 
@@ -10,7 +12,6 @@ class Laps {
     if (isNaN(lap.lapStartDate)) {
       this.data.push(lap)
     }
-    // this.onLapsListChanged()
   }
 
   //
@@ -35,7 +36,7 @@ class Laps {
 
     // otherwise create a new set of laps to return by statrtin with the full data
     // and removing the laps that are not in any of the selected stints
-    const newLaps = [...this.data]
+    this.currData = [...this.data]
 
     const isInsideStint = (lap, stint) =>
       (lap.lapNumber > stint.lap && lap.lapNumber <= stint.lap + stint.length)
@@ -51,11 +52,11 @@ class Laps {
           }
         })
         if (toDelete) {
-          newLaps.splice(newLaps.indexOf(lap), 1)
+          this.currData.splice(this.currData.indexOf(lap), 1)
         }
       })
     })
-    return newLaps
+    return this.currData
   }
 
   computeDeltas (groupedLaps) {
@@ -103,13 +104,22 @@ class Laps {
     // Avg Laptime
     let totalLapTime = 0
     let ignoredLaps = 0
+
+    const totalLaps = d3.max(this.data, d => d.lapNumber)
+    const fuelLossPerLap = MAX_FUEL / totalLaps
+    const timeLossPerLap = MS_LOSS_PER_KG * fuelLossPerLap // in milliseconds
+
     if (driverLaps.length > 1) {
       const avg = d3.mean(driverLaps, d => this.laptimeToMilliseconds(d.lapTime))
       driverLaps.forEach((lap) => {
         // only consider laps in which drivers are actually racing (i.e. track status is 1)
-        if (lap.lapTime !== null && lap.trackStatus === 1 && this.laptimeToMilliseconds(lap.lapTime) < avg * 1.3) {
+        if (lap.lapTime !== null && lap.trackStatus === 1 && this.laptimeToMilliseconds(lap.lapTime) < avg * 1.1) {
           // convert lap time to ms
-          totalLapTime += this.laptimeToMilliseconds(lap.lapTime)
+          if (d3.select('.fuelCorrectionCheckbox').property('checked')) {
+            totalLapTime += this.laptimeToMilliseconds(lap.lapTime) - timeLossPerLap * (totalLaps - lap.lapNumber)
+          } else {
+            totalLapTime += this.laptimeToMilliseconds(lap.lapTime)
+          }
         } else {
           ignoredLaps += 1
         }

@@ -14,9 +14,9 @@ export default function () {
     height: 300,
     margin: {
       top: 50,
-      right: 10,
+      right: 5,
       bottom: 30,
-      left: 10
+      left: 5
     }
   }
 

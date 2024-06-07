@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import { getTeamColor, isSecondDriver, TR_TIME } from '../utils'
+import { getTeamColor, handleSelection, isSecondDriver, TR_TIME } from '../utils'
 
 export default function () {
   let data = []
@@ -243,6 +243,7 @@ export default function () {
       graphData = data.computeGraphData(data.data)
     }
     if (typeof updateData === 'function') updateData()
+    handleSelection()
   }
   //
   return scatterPlot

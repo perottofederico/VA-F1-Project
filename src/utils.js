@@ -2,6 +2,8 @@ import * as d3 from 'd3'
 import { onClick } from './views/eventHandlers'
 export const TR_TIME = 500
 export const EPSILON = 0.000001
+export const MAX_FUEL = 110
+export const MS_LOSS_PER_KG = 30
 
 export function sentenceString (s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
@@ -49,7 +51,7 @@ export function getTeamColor (teamName) {
     case 'Aston Martin': return colors[2]
     case 'Ferrari': return colors[3]
     case 'Mercedes': return colors[4]
-    case 'Alfa Romeo': return colors[5]
+    case 'Alfa Romeo': return '#B36E60' // return colors[5]
     case 'Alpine': return colors[6]
     case 'Haas F1 Team':
     case 'Haas':
@@ -123,7 +125,7 @@ export function getContextualData (axis, driver) {
 
 // Function to handle multiple selections
 export function handleSelection () {
-  console.trace()
+  // console.trace()
   // A list of all the drivers
   const allDrivers = [...d3.select('.drivers_legend').select('g').selectAll('g')].map(driver => driver.id)
   const totalDrivers = allDrivers.length
@@ -156,6 +158,7 @@ export function handleSelection () {
       d3.select('.drivers_legend').selectAll('g#' + driver).on('click', onClick)
       d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 1)
         .style('pointer-events', 'all')
+      d3.selectAll('.context').select('#' + driver).style('opacity', 1)
     })
   } else
   // Case in which the interaction has happened only in the parallel coordinates
@@ -169,6 +172,7 @@ export function handleSelection () {
       d3.select('.drivers_legend').selectAll('g#' + elem).on('click', null)
       d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
         .style('pointer-events', 'none')
+      d3.select('.context').select('#' + elem).style('opacity', 0)
 
       // Set the opacity, interactions and status of elements inside the selection
       pcSelection.forEach(elem => {
@@ -179,6 +183,7 @@ export function handleSelection () {
         d3.select('.drivers_legend').selectAll('g#' + elem).on('click', onClick)
         d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 1)
           .style('pointer-events', 'all')
+        d3.select('.context').select('#' + elem).style('opacity', 1)
       })
     })
   } else
@@ -191,6 +196,7 @@ export function handleSelection () {
         .style('pointer-events', 'bounding-box')
       d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
         .style('pointer-events', 'none')
+      d3.select('.context').select('#' + elem).style('opacity', 0)
     })
 
     // For the drivers that are part of the selection, set their opacity to 1
@@ -201,6 +207,7 @@ export function handleSelection () {
       d3.select('.drivers_legend').selectAll('g#' + driver)
       d3.selectAll('.contents').selectAll('#' + driver).style('opacity', 1)
         .style('pointer-events', 'all')
+      d3.select('.context').select('#' + driver).style('opacity', 1)
     })
   } else {
     // Case in which the interaction has happened in both the drivers_legend and the parallel coordinates
@@ -214,6 +221,8 @@ export function handleSelection () {
 
       d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 0)
         .style('pointer-events', 'none')
+
+      d3.select('.context').select('#' + elem).style('opacity', 0)
     })
 
     // For all the drivers that are part of both selections, set the opacity to 1
@@ -223,6 +232,8 @@ export function handleSelection () {
         .style('pointer-events', 'bounding-box')
       d3.selectAll('.contents').selectAll('#' + elem).style('opacity', 1)
         .style('pointer-events', 'all')
+
+      d3.select('.context').select('#' + elem).style('opacity', 1)
     })
   }
 
@@ -269,11 +280,21 @@ export function resetAllFilters () {
   d3.select('.drivers_legend').select('g').selectAll('g')
     .attr('selected', 'true')
     .style('pointer-events', 'bounding-box')
-  // if there are zoom buttons, use them to reset the zoom
-  d3.selectAll('.resetZoomButton').dispatch('click')
 
   d3.select('.parallel_coordinates_container').selectAll('path')
     .attr('selected', 'true')
+
+  d3.select('.lapsSliderRange').property('value', 1)
+    .dispatch('input')
+
+  d3.select('.fuelCorrectionCheckbox').property('checked', false)
+
+  // Only call the functions that recompute the graph data if no bars are selected
+  // (if they are selected, they will trigger the same function)
+  if (!d3.select('.stackedBarchart_container').select('.contents').selectAll('rect[selected = true]').size()) {
+    d3.select('.fuelCorrectionCheckbox').property('checked', false)
+      .dispatch('change')
+  }
 
   // to reset the selection in the stacked barchart, i dispatch a click event
   // so that the graph is redrawn with the full data

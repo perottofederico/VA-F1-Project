@@ -16,6 +16,8 @@ export default function () {
   let title
   let bounds
   let clip
+  let context
+  let contextYAxis
   let xAxisContainer
   let yAxisContainer
   let xGridContainer
@@ -25,7 +27,7 @@ export default function () {
     height: 400,
     margin: {
       top: 70,
-      right: 80,
+      right: 250,
       bottom: 30,
       left: 80
     }
@@ -53,8 +55,8 @@ export default function () {
     // IF the margins are wrong the tooltip appears under the mouse, triggering the mouseleave event
     // https://stackoverflow.com/questions/15837650/why-is-my-tooltip-flashing-on-and-off
     d3.select('.tooltip')
-      .style('left', (d3.pointer(e)[0]) + 130 + 'px')
-      .style('top', (d3.pointer(e)[1]) + 50 + 'px')
+      .style('left', (d3.pointer(e)[0]) + 90 + 'px')
+      .style('top', (d3.pointer(e)[1]) + 40 + 'px')
   }
   function onPointLeave (e, d) {
     d3.selectAll('.tooltip').remove()
@@ -78,8 +80,6 @@ export default function () {
       const yScale = d3.scaleLinear()
         .domain(d3.extent(data.data, yAccessor))
         .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
-      // I need this copy as a point of reference for the zoom behaviour
-      let yScaleCopy = yScale.copy()
 
       //
       xAxisContainer
@@ -96,12 +96,15 @@ export default function () {
         .on('zoom', handleZoom)
 
       function handleZoom (e) {
-        const y = e.transform.rescaleY(yScaleCopy)
-        yScale.domain(y.domain())
-        yAxisContainer.call(d3.axisLeft(y).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
+        const t = e.transform
+        yScale.domain(t.rescaleY(contextYScale).domain())
         updateNoTr()
+        yAxisContainer.call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
+        if (e.sourceEvent) {
+          context.call(brush.move, yScale.range().map(t.invertY, t))
+        }
       }
-      svg.call(zoom)
+      bounds.call(zoom)
 
       //
       function dataJoin () {
@@ -451,9 +454,81 @@ export default function () {
           )
       }
 
+      // Context chart
+      const contextXScale = d3.scaleLinear()
+        .domain(d3.extent(data.data, xAccessor))
+        .range([0, 150])
+      const contextYScale = d3.scaleLinear()
+        .domain(d3.extent(data.data, yAccessor))
+        .range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
+
+      contextYAxis
+        .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
+
+      function dataJoinContext () {
+        context.selectAll('path')
+          .data(groupedData.values(), d => d[0].driver)
+          .join(enter, update, exit)
+      }
+      function enter (sel) {
+        return sel.append('path')
+          .attr('fill', 'none')
+          .attr('stroke-width', 2.5)
+          .attr('stroke-linejoin', 'round')
+          .attr('stroke-linecap', 'round')
+          .attr('class', d => isSecondDriver(d[0].driver) ? 'dashed' : '') // find a way to use this for drivers of the same team
+          // .style('mix-blend-mode', 'multiply')
+          .attr('stroke', d => getTeamColor(d[0].team)) // I'm using d[0] to get the property i want from the first lap in the intern map
+          .attr('id', d => d[0].driver)
+          .attr('d', d3.line()
+            .defined(d => !isNaN(d.delta)) // gets rid of errors, which come from drivers not completing a lap (crashing or dnfs)
+            .x(d => contextXScale(d.lapNumber))
+            .y(d => yScale(d.delta))
+            // .curve(d3.curveCatmullRom.alpha(0.5)) // https://d3js.org/d3-shape/curve
+          )
+      }
+      function update (sel) {
+        return sel
+          .call(update => update.transition().duration(TR_TIME)
+            .attr('d', d3.line()
+              .defined(d => !isNaN(d.delta))
+              .x(d => contextXScale(d.lapNumber))
+              .y(d => yScale(d.delta))
+            )
+          )
+      }
+      function exit (sel) {
+        sel.call(exit => exit
+          .remove()
+        )
+      }
+      dataJoinContext()
+
+      const brush = d3.brushY()
+        .extent([[0, 0], [150, dimensions.height - dimensions.margin.bottom - dimensions.margin.top]])
+        .on('start brush end', brushed)
+      context
+        .call(brush)
+        .call(brush.move, contextYScale.range())
+      //
+
+      function brushed (e, d) {
+        if (e.selection === null || e.selection[0] === e.selection[1]) {
+          context.call(brush.move, yScale.range())
+        }
+        const s = e.selection || contextYScale.range()
+        yScale.domain(s.map(contextYScale.invert, contextYScale))
+        yAxisContainer
+          .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
+        if (e.sourceEvent) {
+          bounds.call(zoom.transform, d3.zoomIdentity
+            .scale((dimensions.height - dimensions.margin.bottom - dimensions.margin.top) / (s[1] - s[0]))
+            .translate(0, -s[0]))
+        }
+      }
+
       //
       updateData = function (src) {
-        console.trace()
         xScale.domain(d3.extent(data.data, xAccessor))
         // yScale.domain(d3.extent(data.data, yAccessor))
         yScale.domain([d3.min(groupedData.values(), d => d3.min(d, yAccessor)), d3.max(groupedData.values(), d => d3.max(d, yAccessor))])
@@ -465,11 +540,11 @@ export default function () {
           .transition()
           .duration(TR_TIME)
           .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
-        yScaleCopy = yScale.copy()
-        console.log(d3.zoomTransform(svg.node()))
-        if (src === 'barClick') svg.call(zoom.scaleTo, d3.zoomTransform(svg.node()).k)
-        else svg.call(zoom.transform, d3.zoomIdentity)
+
+        if (src === 'barClick') bounds.call(zoom.scaleTo, d3.zoomTransform(svg.node()).k)
+        else bounds.call(zoom.transform, d3.zoomIdentity)
         dataJoin()
+        dataJoinContext()
       }
 
       updateWidth = function () {
@@ -483,6 +558,11 @@ export default function () {
         xAxisContainer.transition().duration(TR_TIME)
           .call(d3.axisBottom(xScale))
 
+        //
+        context
+          .attr('transform', `translate(${dimensions.width - dimensions.margin.right + dimensions.margin.left}, ${dimensions.margin.top})`)
+        contextYAxis
+          .attr('transform', `translate(${dimensions.width - dimensions.margin.right + dimensions.margin.left}, ${dimensions.margin.top})`)
         clip
           .attr('width', dimensions.width - dimensions.margin.right)
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
@@ -496,23 +576,27 @@ export default function () {
         svg.attr('height', dimensions.height)
 
         xAxisContainer
-          .transition()
-          .duration(TR_TIME)
+          .transition().duration(TR_TIME)
           .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)
-
         yAxisContainer
-          .transition()
-          .duration(TR_TIME)
+          .transition().duration(TR_TIME)
           .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
 
-        yScaleCopy = yScale.copy()
-        // svg.call(zoom)
+        contextYScale.range([0, dimensions.height - dimensions.margin.top - dimensions.margin.bottom])
+        contextYAxis
+          .transition().duration(TR_TIME)
+          .call(d3.axisLeft(yScale).tickFormat(d => d >= 0 ? d3.timeFormat('%M:%S.%L')(d) : d3.timeFormat('- %M:%S.%L')(Math.abs(d))))
 
         clip
           .attr('width', dimensions.width - dimensions.margin.right)
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
 
         dataJoin()
+        dataJoinContext()
+        brush.extent([[0, 0], [150, dimensions.height - dimensions.margin.bottom - dimensions.margin.top]])
+        context
+          .call(brush)
+          .call(brush.move, yScale.range())
       }
     })
   }
@@ -541,6 +625,7 @@ export default function () {
     if (typeof updateHeight === 'function') updateHeight()
     return linechart
   }
+
   linechart.initChart = function (selection) {
     svg = selection.append('svg')
       .attr('width', dimensions.width)
@@ -559,7 +644,7 @@ export default function () {
       .attr('class', 'contents')
       .attr('clip-path', 'url(#clip)')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.margin.top})`)
-
+      .style('pointer-events', 'bounding-box')
     clip = bounds.append('defs').append('clipPath')
       .attr('id', 'clip')
       .append('rect')
@@ -567,6 +652,13 @@ export default function () {
       .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5)
       .attr('x', 0)
       .attr('y', -5)
+
+    context = svg.append('g')
+      .attr('class', 'context')
+      .attr('transform', `translate(${dimensions.width - dimensions.margin.right + dimensions.margin.left}, ${dimensions.margin.top})`)
+    contextYAxis = svg.append('g')
+      .attr('class', 'contextYAxis')
+      .attr('transform', `translate(${dimensions.width - dimensions.margin.right + dimensions.margin.left}, ${dimensions.margin.top})`)
 
     xAxisContainer = svg.append('g')
       .attr('transform', `translate(${dimensions.margin.left}, ${dimensions.height - dimensions.margin.bottom})`)

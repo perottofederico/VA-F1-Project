@@ -49,7 +49,7 @@ class Controller {
     }
     // create a new set of laps
     const newLaps = this.laps.reduceDriverLaps()
-    this.parallel_coordinates.computeGraphData(newLaps)
+    this.parallel_coordinates.computeGraphData(newLaps, 'barClick')
     this.linechart.computeGraphData(newLaps, 'barClick')
   }
 
@@ -58,11 +58,20 @@ class Controller {
   }
 
   onLapsListChanged () {
-    console.log('Controller - Laps list changed')
+    console.trace('onLapsListChanged')
+    this.parallel_coordinates.computeGraphData(this.laps.currData, 'sliderChange')
     // this.linechart.data(this.laps)
     // this.parallel_coordinates.laps(this.laps)
     // this.parallel_coordinates.computeGraphData()
     // this.stackedBarchart.laps(this.laps)
+  }
+
+  onLapsSliderChange () {
+    this.parallel_coordinates.computeGraphData(this.laps.currData, 'checkboxChange')
+  }
+
+  onFuelCorrectionChange (checked) {
+    this.parallel_coordinates.computeGraphData(this.laps.currData, checked)
   }
 
   //

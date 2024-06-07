@@ -17,6 +17,7 @@ export default function () {
   let bounds
   let title
   let clip
+  let brush
   const dimensions = {
     width: 800,
     height: 400,
@@ -124,12 +125,45 @@ export default function () {
         .y(([metric, value]) => yScales[metric](value))
 
       // Create brush behaviour
-      const brush = d3.brushY()
+      brush = d3.brushY()
         // maybe add a little extra on the height for clarity
         .extent([[-25, -5], [25, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
-        .on('end', brushZoom)
+        .on('start brush end', brushed)
 
-      // Brushing zoom function
+      const selections = new Map()
+      function brushed ({ selection }, key) {
+        if (selection === null) selections.delete(key)
+        else selections.set(key, selection.map(yScales[key].invert))
+
+        if (!selections.size) {
+          d3.select('.parallel_coordinates_container').select('.contents').selectAll('path').style('opacity', 1)
+          d3.select('.parallel_coordinates_container').select('.contents').selectAll('path').attr('selected', 'true')
+        }
+        let selected = drivers.data.map(d => d.Abbreviation)
+        bounds.selectAll('path').each(function (d) {
+          // Since I decided to have different ranges for some axes
+          // I also need to adapt the check to the current axis
+          let isIncluded
+          Array.from(selections)
+            .forEach((elem) => {
+              if (elem[0] === 'AvgLaptime' || elem[0] === 'PitStopTime') {
+                isIncluded = (d[elem[0]] >= elem[1][0] && d[elem[0]] <= elem[1][1])
+              } else {
+                isIncluded = (d[elem[0]] >= elem[1][1] && d[elem[0]] <= elem[1][0])
+              }
+
+              if (!isIncluded && selected.includes(d.driver)) {
+                selected = selected.filter(driver => driver !== d.driver)
+              }
+
+              d3.select('.parallel_coordinates_container').select('#' + d.driver).attr('selected', selected.includes(d.driver) ? 'true' : 'false')
+            })
+        })
+        // Call a separate function that handles the behaviour of the selected elements
+        handleSelection()
+      }
+
+      /* Brushing + zoom function - not used anymore but i'm keeping it because I worked very hard on it :'c
       function brushZoom ({ selection }, key) {
         const scale = yScales[key]
         if (selection) {
@@ -212,8 +246,8 @@ export default function () {
           }
         }
       }
-
-      // function to reset the zoom (domain) of an axis
+      */
+      /* function to reset the zoom (domain) of an axis - Also not used anymore
       function resetZoom (key) {
         const scale = yScales[key]
 
@@ -237,10 +271,6 @@ export default function () {
           })
           bounds.select('#' + driver.driver)
             .attr('selected', selected ? 'true' : 'false')
-            /*
-          d3.select('.drivers_legend').selectAll('#' + driver.driver)
-            .attr('selected', selected ? 'false' : 'true')
-          */
         })
         // call an outside function to handle setting the opacity and interactivity
         handleSelection()
@@ -264,7 +294,7 @@ export default function () {
         d3.selectAll('#' + key + '.resetZoomButton').remove()
 
         dataJoin()
-      }
+      } */
 
       // call the y axes
       svg.selectAll('.parallelCoordinates_yAxisContainer')
@@ -278,10 +308,9 @@ export default function () {
           }
           // Add brushing to axes
           d3.select(this)
-          // because of brush i put function here test
+          // because of brush i put function here
             .on('mousemove', mouseMove)
             .on('mouseleave', mouseLeave)
-            .on('dblclick', () => resetZoom(d))
             .call(brush)
         })
 
@@ -386,6 +415,10 @@ export default function () {
               d3.select(this).call(d3.axisLeft().scale(yScales[d]))
             }
           })
+
+        svg.selectAll('.parallelCoordinates_yAxisContainer')
+          .call(brush.move, null)
+
         dataJoin()
       }
       updateWidth = function () {
@@ -399,17 +432,6 @@ export default function () {
             d3.select(this)
               .attr('transform', d => `translate(${dimensions.margin.left + xScale((d))}, ${dimensions.margin.top})`)
               .call(brush)
-          })
-
-        d3.selectAll('.resetZoomButton')
-          .each(function () {
-            const metric = d3.select(this).attr('id')
-            d3.select(this).select('rect')
-              .transition().duration(TR_TIME)
-              .attr('x', xScale(metric) + dimensions.margin.left - 40)
-            d3.select(this).select('text')
-              .transition().duration(TR_TIME)
-              .attr('x', xScale(metric) + dimensions.margin.left)
           })
 
         d3.select('.clip2').select('rect')
@@ -434,16 +456,6 @@ export default function () {
         clip
           .attr('width', dimensions.width - dimensions.margin.right - dimensions.margin.left + 10)
           .attr('height', dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 10)
-
-        d3.selectAll('.resetZoomButton')
-          .each(function () {
-            d3.select(this).select('rect')
-              .transition().duration(TR_TIME)
-              .attr('y', dimensions.height - dimensions.margin.bottom + 15)
-            d3.select(this).select('text')
-              .transition().duration(TR_TIME)
-              .attr('y', dimensions.height - 10)
-          })
 
         brush.extent([[-45, -5], [45, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
         d3.selectAll('.parallelCoordinates_yAxisContainer')
@@ -548,7 +560,14 @@ export default function () {
       .style('fill', 'white')
       .style('font-size', 12)
   }
-  parallel_coordinates.computeGraphData = async function (setOfLaps) {
+  parallel_coordinates.computeGraphData = async function (setOfLaps, src) {
+    console.trace()
+
+    // This removes the grey brush area as soon as the selection has been done
+    if (brush) {
+      svg.selectAll('.parallelCoordinates_yAxisContainer')
+        .call(brush.move, null)
+    }
     // Create an array to contain the computed data
     graphData = []
     // Create an array to store all the telemetry promises
@@ -556,8 +575,10 @@ export default function () {
 
     // Group the laps
     const groupedLaps = d3.group(setOfLaps, d => d.driver)
+    const minLaps = d3.select('.lapsSliderRange').node().value
     groupedLaps.forEach(d => {
-      if (d.length > 1) { // >2 if we want to get rid of some edge cases
+      const lastLapOfDriver = laps.data.filter(lap => lap.driver === d[0].driver).length
+      if (lastLapOfDriver > minLaps) {
       // compute the metrics based on the laps data
         const lapsMetrics = laps.computeMetrics(d)
 

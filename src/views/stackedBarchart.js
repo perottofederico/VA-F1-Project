@@ -74,8 +74,8 @@ export default function () {
   }
   function mousemove (event, d) {
     d3.select('.tooltip')
-      .style('left', event.x + 'px')
-      .style('top', event.y - 65 + 'px')
+      .style('left', event.x - 55 + 'px')
+      .style('top', event.y - 75 + 'px')
   }
 
   function stackedBarchart (selection) {
