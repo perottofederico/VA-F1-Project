@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 import {
-  EPSILON, TR_TIME, getTeamColor, isSecondDriver,
+  TR_TIME, getTeamColor, isSecondDriver,
   handleSelection, getContextualData
 } from '../utils'
 
@@ -128,7 +128,7 @@ export default function () {
       brush = d3.brushY()
         // maybe add a little extra on the height for clarity
         .extent([[-25, -5], [25, dimensions.height - dimensions.margin.bottom - dimensions.margin.top + 5]])
-        .on('start brush end', brushed)
+        .on('end', brushed)
 
       const selections = new Map()
       function brushed ({ selection }, key) {

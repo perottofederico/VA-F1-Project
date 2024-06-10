@@ -100,13 +100,13 @@ export function trackStatusToString (trackStatus) {
 
 // convert a 'compound' string into a color hex
 export function compoundToColor (compound) {
-  // https://colorbrewer2.org/index.html?type=testtype&scheme=TestMap&n=3#type=qualitative&scheme=Accent&n=5
+  // https://colorbrewer2.org/#type=qualitative&scheme=Set3&n=5
   switch (compound) {
-    case 'SOFT': return '#fdc086' // '#dd0741'
-    case 'MEDIUM': return '#ffff99' // '#F8D500'
-    case 'HARD': return '#beaed4' // '#eee'
-    case 'INTERMEDIATE': return '#7fc97f' // '#44D745'
-    case 'WET': return '#386cb0' // '#005AFF'
+    case 'SOFT': return '#fb8072' // '#dd0741'
+    case 'MEDIUM': return '#ffffb3' // '#F8D500'
+    case 'HARD': return '#bebada' // '#eee'
+    case 'INTERMEDIATE': return '#8dd3c7' // '#44D745'
+    case 'WET': return '#80b1d3' // '#005AFF'
   }
 }
 
