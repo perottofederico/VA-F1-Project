@@ -1,0 +1,24 @@
+,2
+RoundNumber,2
+Country,Saudi Arabia
+Location,Jeddah
+OfficialEventName,FORMULA 1 STC SAUDI ARABIAN GRAND PRIX 2023
+EventDate,2023-03-19 00:00:00
+EventName,Saudi Arabian Grand Prix
+EventFormat,conventional
+Session1,Practice 1
+Session1Date,2023-03-17 16:30:00+03:00
+Session1DateUtc,2023-03-17 13:30:00
+Session2,Practice 2
+Session2Date,2023-03-17 20:00:00+03:00
+Session2DateUtc,2023-03-17 17:00:00
+Session3,Practice 3
+Session3Date,2023-03-18 16:30:00+03:00
+Session3DateUtc,2023-03-18 13:30:00
+Session4,Qualifying
+Session4Date,2023-03-18 20:00:00+03:00
+Session4DateUtc,2023-03-18 17:00:00
+Session5,Race
+Session5Date,2023-03-19 20:00:00+03:00
+Session5DateUtc,2023-03-19 17:00:00
+F1ApiSupport,True

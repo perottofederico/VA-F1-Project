@@ -1,0 +1,24 @@
+,10
+RoundNumber,10
+Country,Great Britain
+Location,Silverstone
+OfficialEventName,FORMULA 1 ARAMCO BRITISH GRAND PRIX 2023
+EventDate,2023-07-09 00:00:00
+EventName,British Grand Prix
+EventFormat,conventional
+Session1,Practice 1
+Session1Date,2023-07-07 12:30:00+01:00
+Session1DateUtc,2023-07-07 11:30:00
+Session2,Practice 2
+Session2Date,2023-07-07 16:00:00+01:00
+Session2DateUtc,2023-07-07 15:00:00
+Session3,Practice 3
+Session3Date,2023-07-08 11:30:00+01:00
+Session3DateUtc,2023-07-08 10:30:00
+Session4,Qualifying
+Session4Date,2023-07-08 15:00:00+01:00
+Session4DateUtc,2023-07-08 14:00:00
+Session5,Race
+Session5Date,2023-07-09 15:00:00+01:00
+Session5DateUtc,2023-07-09 14:00:00
+F1ApiSupport,True
